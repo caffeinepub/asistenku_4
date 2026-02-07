@@ -1,0 +1,183 @@
+{
+  "kind": "build_request",
+  "title": "Backend-only Asistenku core modules: Services, Tasks, Partner Wallet, Financial Summary",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-67",
+      "text": "Backend-only: Extend `backend/main.mo` with a new Services module that introduces the Service data model and storage indexes, without changing any existing User/Role/ID logic or existing userProfiles maps.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1",
+          "msg-2"
+        ],
+        "quotes": [
+          "BACKEND ONLY — ASISTENKU CORE MODULES (SERVICES → TASKS → PARTNER WALLET → FINANCIAL SUMMARY)",
+          "MODULE 1 — SERVICES (FOUNDATION FOR GMV & hasActiveService)",
+          "Do NOT change existing User / Role / ID logic.",
+          "Do NOT redesign existing models. Extend only.",
+          "All new data must be compatible with current main.mo userProfiles."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Define `Service` with exactly these fields and types: `serviceId: Text`, `clientId: Text`, `packageName: Text` (values: \"TENANG\" | \"RAPI\" | \"FOKUS\" | \"JAGA\"), `priceIdr: Nat`, `status: Text` (values: \"ACTIVE\" | \"INACTIVE\"), `createdAt: Nat`, `updatedAt: Nat`.",
+        "Add storage maps: `servicesById : Map<Text, Service>` and `servicesByClientId : Map<Text, [Text]>` (clientId -> serviceId list).",
+        "The addition compiles cleanly in Motoko and does not require any frontend changes.",
+        "No existing `UserProfile`, role normalization, registration, or ID generation functions are modified in behavior/format."
+      ]
+    },
+    {
+      "id": "REQ-68",
+      "text": "Backend-only: Implement Services endpoints with explicit, role-based authorization rules and empty-safe reads.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "STEP 2 — ENDPOINTS Add functions: createService... setServiceStatus... getServicesByClientId... hasActiveServiceForCaller... getServiceStats...",
+          "Rules: Services are CREATED ONLY by ADMIN or SUPERADMIN. Client cannot create or modify services.",
+          "STEP 3 — SAFETY - If client has no services → return empty list. - If no services exist → all stats return 0. - No traps for missing data."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Expose `createService(clientId: Text, packageName: Text, priceIdr: Nat) : async Text` that can only be called by callers whose stored role is ADMIN or SUPERADMIN; it returns a new `serviceId`.",
+        "Expose `setServiceStatus(serviceId: Text, status: Text) : async ()` that can only be called by ADMIN or SUPERADMIN.",
+        "Expose `getServicesByClientId(clientId: Text) : async [Service]` that can be called by (a) the owner CLIENT whose `UserProfile.id == clientId`, or (b) ADMIN/SUPERADMIN; otherwise it traps with an authorization error.",
+        "Expose `hasActiveServiceForCaller() : async Bool` callable by CLIENT only; it returns `true` iff there exists at least one service for that caller’s clientId with `status == \"ACTIVE\"`; if the caller has no services, it returns `false` (no traps for empty).",
+        "Expose `getServiceStats() : async { totalAll : Nat; totalActive : Nat; totalInactive : Nat; byPackageAll : Map<Text, Nat> }` callable by SUPERADMIN only.",
+        "Stats logic matches spec: `totalAll` sums `priceIdr` for all services; `totalActive` sums where `status==\"ACTIVE\"`; `totalInactive` sums where `status==\"INACTIVE\"`; `byPackageAll` sums by `packageName` ignoring status.",
+        "Empty-safe: if there are no services, stats return zeros and `byPackageAll` returns an empty map; `getServicesByClientId` returns `[]` when none exist; no traps occur due to missing map entries."
+      ]
+    },
+    {
+      "id": "REQ-69",
+      "text": "Backend-only: Extend `backend/main.mo` with a new Tasks module that introduces the Task data model and storage indexes, without changing any existing User/Role/ID logic.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "MODULE 2 — TASKS (FOUNDATION FOR DELEGATION FLOW)",
+          "STEP 1 — DATA MODEL Create Task model... Storage...",
+          "HARD RULES (WAJIB): ... Do NOT redesign existing models. Extend only."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Define `Task` with exactly these fields and types: `taskId: Text`, `clientId: Text`, `partnerId: ?Text`, `title: Text`, `description: Text`, `clientDeadline: ?Nat`, `internalDeadline: ?Nat`, `statusInternal: Text` (values: \"REQUESTED\" | \"IN_PROGRESS\" | \"QA\" | \"REVISION\" | \"DONE\"), `createdAt: Nat`, `updatedAt: Nat`.",
+        "Add storage maps: `tasksById : Map<Text, Task>`, `tasksByClientId : Map<Text, [Text]>`, `tasksByPartnerId : Map<Text, [Text]>`.",
+        "No existing profile/role/ID logic is altered; tasks are stored independently and reference `clientId`/`partnerId` only by text IDs."
+      ]
+    },
+    {
+      "id": "REQ-70",
+      "text": "Backend-only: Implement Tasks endpoints with explicit-only behavior (no auto assignment/transitions) and empty-safe reads. `createTask` must require an ACTIVE service and trap with a clear message when blocked.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "STEP 2 — ENDPOINTS - createTask... (CLIENT only) Backend must check: caller has ACTIVE service (use hasActiveServiceForCaller) if not active → trap with clear message",
+          "- assignTask... (ASISTENMU / ADMIN / SUPERADMIN)",
+          "- setTaskStatus... (ASISTENMU / ADMIN / SUPERADMIN)",
+          "- getMyClientTasks... (CLIENT only)",
+          "- getMyPartnerTasks... (PARTNER only)",
+          "STEP 3 — SAFETY - If no tasks → return []. - Partner without tasks → []. - No auto assignment or auto transitions."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Expose `createTask(title: Text, description: Text, clientDeadline: ?Nat) : async Text` callable by CLIENT only; it checks `await hasActiveServiceForCaller()` and if `false` it traps with a clear, user-readable message (English).",
+        "On successful `createTask`, a new Task is created with `clientId` set to the caller’s clientId (`UserProfile.id`), `partnerId=null`, `statusInternal=\"REQUESTED\"`, and timestamps set; it is indexed in `tasksById` and `tasksByClientId`.",
+        "Expose `assignTask(taskId: Text, partnerId: Text) : async ()` callable only by ASISTENMU, ADMIN, or SUPERADMIN; it sets `partnerId=?partnerId` and updates indexes (`tasksByPartnerId`) without any auto side effects.",
+        "Expose `setTaskStatus(taskId: Text, statusInternal: Text) : async ()` callable only by ASISTENMU, ADMIN, or SUPERADMIN; it updates only the status and timestamps (no auto transitions).",
+        "Expose `getMyClientTasks() : async [Task]` callable by CLIENT only; returns `[]` if none.",
+        "Expose `getMyPartnerTasks() : async [Task]` callable by PARTNER only; returns `[]` if none.",
+        "All list endpoints are empty-safe and never trap due to missing task indexes or missing IDs; missing task IDs for update endpoints do not trap due to missing map entries (they must handle absent values safely, e.g., no-op or explicit error), except for role/authorization checks."
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "text": "Backend-only: Extend `backend/main.mo` with a new Partner Wallet module including wallet and withdrawal-request data models and storage, ensuring `getMyWallet` is zero-safe and never traps for missing wallets.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "MODULE 3 — PARTNER WALLET (BALANCE & WITHDRAW)",
+          "Create PartnerWallet... Storage...",
+          "- getMyWallet() -> PartnerWallet (PARTNER only; if not exists return zeroed wallet)",
+          "- requestWithdraw(...) -> () (PARTNER only) Withdrawal status tracking minimal: status : \"PENDING\" | \"APPROVED\" | \"REJECTED\"",
+          "- approveWithdraw(requestId) -> () (ADMIN / SUPERADMIN)",
+          "Wallet must exist even if balance = 0."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Define `PartnerWallet` with exactly: `partnerId: Text`, `balanceIdr: Nat`, `totalPaidOutIdr: Nat`.",
+        "Add storage map: `walletByPartnerId : Map<Text, PartnerWallet>`.",
+        "Add a minimal withdrawal request model that includes at least: `requestId: Text`, `partnerId: Text`, `amountIdr: Nat`, `bankName: Text`, `accountNumber: Text`, `accountName: Text`, `status: Text` (\"PENDING\"|\"APPROVED\"|\"REJECTED\"), plus timestamps if needed for safe bookkeeping.",
+        "Add storage for withdrawal requests so `approveWithdraw(requestId)` can locate and update a request deterministically (e.g., `withdrawRequestsById` plus an optional index by partner).",
+        "Expose `getMyWallet() : async PartnerWallet` callable by PARTNER only; if no wallet exists, return `{ partnerId=<callerPartnerId>; balanceIdr=0; totalPaidOutIdr=0 }` and do not trap.",
+        "Expose `requestWithdraw(amountIdr: Nat, bankName: Text, accountNumber: Text, accountName: Text) : async ()` callable by PARTNER only; it creates a withdrawal request with initial status \"PENDING\" (no auto approval).",
+        "Expose `approveWithdraw(requestId: Text) : async ()` callable by ADMIN or SUPERADMIN only; it updates the withdrawal request status to \"APPROVED\" and applies minimal bookkeeping consistently (placeholder payout is allowed).",
+        "All wallet-related reads are empty-safe and do not trap due to missing wallet/request data; no background/automatic payout actions are introduced."
+      ]
+    },
+    {
+      "id": "REQ-72",
+      "text": "Backend-only: Implement Financial Summary aggregation and endpoint for SUPERADMIN with fully empty-safe 0/empty-map outputs when services/wallets are absent.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "MODULE 4 — FINANCIAL SUMMARY (SUPERADMIN VIEW)",
+          "Compute: totalGmvAllTime = sum(priceIdr of all services) ... totalPartnerPayout = sum(totalPaidOutIdr of all wallets) grossMargin = totalGmvAllTime - totalPartnerPayout",
+          "ENDPOINT - getFinancialSummary() -> {...} (SUPERADMIN only)",
+          "SAFETY - If wallet/task not implemented yet → payout = 0. - Never trap. Return 0s."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Expose `getFinancialSummary() : async { totalGmvAllTime : Nat; totalGmvActive : Nat; gmvByPackageAll : Map<Text, Nat>; totalPartnerPayout : Nat; grossMargin : Nat }` callable by SUPERADMIN only.",
+        "`totalGmvAllTime` equals the sum of `priceIdr` across all services.",
+        "`totalGmvActive` equals the sum of `priceIdr` across services where `status == \"ACTIVE\"`.",
+        "`gmvByPackageAll` equals sums by `packageName` across all services ignoring status.",
+        "`totalPartnerPayout` equals the sum of `totalPaidOutIdr` across all wallets; if there are no wallets, it is 0.",
+        "`grossMargin` equals `totalGmvAllTime - totalPartnerPayout` using Nat-safe arithmetic (must not trap).",
+        "If there are no services and/or no wallets, the function returns 0 for all Nat fields and an empty map for `gmvByPackageAll`; it never traps due to missing data."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend-only changes in `backend/main.mo` (single-actor). Do not modify frontend files, routing, guards, theme, or UI.",
+    "Do not change existing User/Role/ID logic or ID formats already in use (e.g., CA-XXXXXX, PA-XXXXXX, existing internal user IDs).",
+    "Extend-only: do not redesign or replace existing models/maps; add new models and maps alongside existing state.",
+    "All list/query endpoints must be empty-safe: return `[]` or `0` for empty/missing data and must not trap due to missing map entries.",
+    "No automatic actions, background triggers, or implicit transitions; all state changes must be initiated by explicit endpoint calls.",
+    "New data structures must remain compatible with the current `main.mo` userProfiles and role authorization approach (using stored caller profile role)."
+  ],
+  "nonGoals": [
+    "Any frontend implementation (pages, hooks, React Query wiring, UI panels) for Services/Tasks/Wallet/Summary.",
+    "Changing or expanding the existing user profile schema, role list, role normalization rules, or user status lifecycle beyond what already exists.",
+    "Implementing real-world bank payout integrations or external payment rails.",
+    "Implementing automatic task assignment, automatic status transitions, or scheduled processing of withdrawals."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

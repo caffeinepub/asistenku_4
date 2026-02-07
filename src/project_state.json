@@ -1,0 +1,761 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 25,
+  "summary": "Extend Asistenku backend (main.mo) with backend-only core modules for Services, Tasks, Partner Wallet, and Financial Summary, without changing existing user/role/ID logic, and enforcing empty-safe, explicit-only behavior.",
+  "architectural_notes": [
+    "No auto-redirect based on role anywhere",
+    "`getCallerUser` may ONLY be called when user clicks \"Ruang kerja saya\" / \"Ruang kerja\"; never on onLoad/lifecycle",
+    "One principalId maps to exactly one role (no multi-role)",
+    "All users and IDs are system-generated; never accept manual userId input",
+    "All pages must render even when data is empty; use LOCKED/DISABLED state instead of hiding UI",
+    "Public landing has no Internet Identity login; public register/login uses II only per specified flows",
+    "Internal area is accessible only via /internal gate with backend-stored access codes",
+    "Persist registration form fields into the user's profile dashboard (Client & Partner)",
+    "`/internal/login` must use a single, global Internet Identity login control above role cards; role cards must not each have their own II login.",
+    "All internal role-card \"Ruang Kerja\" actions must be disabled until II login is complete; clicking \"Ruang Kerja\" only performs a role check for that specific card and routes or shows the internal 404+back flow."
+  ],
+  "known_issues": [
+    "Landing page (`/`) renders as blank white canvas in draft/preview and causes the preview (Caffeine) to hang/unresponsive.",
+    "Direct navigation to internal dashboards (e.g., `/superadmin`) is currently possible without passing the `/internal` code gate / proper auth checks.",
+    "`/internal/login` code-gate behavior is inconsistent: user cannot enter code as expected, but can access internal routes by manually typing URLs.",
+    "SUPERADMIN claim flow: clicking \"Claim Superadmin\" card does nothing (no loading/notification/redirect) even after II login; as a result the principal remains non-SUPERADMIN and clicking SUPERADMIN Workspace routes to the internal 404 mismatch page.",
+    "Internal routes can be accessed by typing protected URLs (e.g., /superadmin) in a different browser without Internet Identity login and/or without passing the /internal code gate; must be locked behind manual verification + internalGatePassed guard.",
+    "/internal currently always returns “Invalid code” for Code A/B due to incorrect frontend/local comparison or backend reading wrong internalCodes fields/keys; must be fixed by backend verifyInternalAccessCode and removing all frontend compare logic.",
+    "Regression after backend schema update: entering a valid internal code on /internal can incorrectly navigate/redirect to non-existent /internal/register and InternalGateGuard behavior disappears; caused by frontend guard role/status mismatch (UPPERCASE roles + pending status)."
+  ],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-add-the-uploaded-brand-images-as-static-assets-and-use-them-consistently-across-the-app-use-asistenku-hero-png-on-the-landing-hero-use-asistenku-horizontal-png-as-the-horizontal-logo-on-landing-dashboards-and-use-asistenku-icon-png-as-the-dashboard-icon",
+      "title": "Add the uploaded brand images as static assets and use them consistently across the app: use `asistenku-hero.png` on the landing hero, use `asistenku-horizontal.png` as the horizontal logo on landing + dashboards, and use `asistenku-icon.png` as the dashboard icon.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-public-landing-page-at-route-as-an-information-only-page-not-a-login-page-it-must-not-display-or-trigger-internet-identity-login-ctas-must-only-navigate-to-daftar-and-login-the-page-must-include-a-sticky-glass-white-header-with-85-opacity-blur-on-scroll-the-specified-menu-items-hero-section-with-the-exact-indonesian-headline-subcopy-and-two-ctas-the-required-sections-kebutuhan-yang-unik-layanan-untuk-saya-with-4-service-cards-using-the-exact-provided-text-menanggung-sendiri-atau-didampingi-with-two-columns-and-a-cta-faq-with-the-three-q-a-bergabung-dengan-asistenku-with-checklist-and-cta-to-daftar-and-the-footer-with-exactly-the-provided-footer-text-and-no-extra-text-including-no-built-by-caffeine-powered-by-or-any-third-party-watermark",
+      "title": "Implement the public landing page at route `/` as an information-only page (not a login page). It must not display or trigger Internet Identity login. CTAs must only navigate to `/daftar` and `/login`. The page must include: a sticky glass white header with 85% opacity + blur on scroll, the specified menu items, hero section with the exact Indonesian headline/subcopy and two CTAs, the required sections (Kebutuhan yang Unik; Layanan untuk Saya with 4 service cards using the exact provided text; Menanggung Sendiri atau Didampingi? with two columns and a CTA; FAQ with the three Q/A; Bergabung dengan Asistenku with checklist and CTA to `/daftar`), and the footer with exactly the provided footer text and no extra text (including no “Built by Caffeine”, “Powered by”, or any third-party watermark).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-public-registration-page-at-daftar-for-two-self-registration-flows-client-and-partner-each-flow-must-collect-the-exact-form-fields-and-only-right-before-submit-require-internet-identity-authentication-on-submit-auto-create-the-user-record-in-the-backend-no-manual-userid-input-with-principalid-role-status-unique-system-generated-id-client-ca-xxxxxx-active-partner-pa-xxxxxx-pending-and-the-submitted-form-fields-after-successful-creation-show-a-success-state-with-a-button-that-navigates-to-the-correct-dashboard-client-or-partner-without-any-auto-redirect-if-a-user-attempts-the-wrong-path-flow-for-their-existing-account-show-the-public-error-please-click-according-to-your-account-and-provide-a-link-button-to-login",
+      "title": "Implement public registration page at `/daftar` for two self-registration flows: CLIENT and PARTNER. Each flow must collect the exact form fields and, only right before submit, require Internet Identity authentication. On submit, auto-create the user record in the backend (no manual userId input) with: principalId, role, status, unique system-generated ID (CLIENT: `CA-XXXXXX` ACTIVE; PARTNER: `PA-XXXXXX` PENDING), and the submitted form fields. After successful creation, show a success state with a button that navigates to the correct dashboard (`/client` or `/partner`) without any auto-redirect. If a user attempts the wrong path/flow for their existing account, show the public error: \"Please click according to your account\" and provide a link/button to `/login`.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-public-login-page-at-login-with-two-role-cards-client-and-partner-each-card-must-have-its-own-internet-identity-login-action-and-a-my-workspace-button-the-app-must-enforce-that-a-single-principalid-can-have-only-one-role-clicking-my-workspace-must-call-the-backend-getcalleruser-or-equivalent-only-on-that-click-never-on-page-load-lifecycle-and-then-route-the-user-to-the-correct-dashboard-based-on-the-stored-role-if-the-selected-card-role-does-not-match-the-stored-role-for-that-principal-show-a-public-mismatch-error-in-english-and-do-not-redirect-automatically",
+      "title": "Implement public login page at `/login` with two role cards (Client and Partner). Each card must have its own Internet Identity login action and a \"My workspace\" button. The app must enforce that a single principalId can have only one role. Clicking \"My workspace\" must call the backend `getCallerUser` (or equivalent) only on that click (never on page load / lifecycle) and then route the user to the correct dashboard based on the stored role. If the selected card role does not match the stored role for that principal, show a public mismatch error in English and do not redirect automatically.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-internal-gate-at-internal-that-is-only-accessible-manually-via-url-it-must-show-an-input-for-a-code-and-a-continue-button-the-backend-must-store-the-initial-codes-exactly-as-kode-a-daftar-asistenku-daftar-2026-and-kode-b-login-asistenku-login-submitting-the-code-must-route-as-follows-code-a-internal-daftar-code-b-internal-login-invalid-codes-must-show-a-safe-error-state-without-hiding-the-ui",
+      "title": "Implement the internal gate at `/internal` that is only accessible manually via URL. It must show an input for a code and a \"Continue\" button. The backend must store the initial codes exactly as: `KODE_A_DAFTAR = asistenku-daftar-2026` and `KODE_B_LOGIN = Asistenku-login`. Submitting the code must route as follows: code A -> `/internal/daftar`, code B -> `/internal/login`. Invalid codes must show a safe error state without hiding the UI.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-internal-register-at-internal-daftar-internet-identity-login-is-required-show-cards-for-finance-supervisor-management-asistenmu-selecting-one-creates-the-internal-user-automatically-with-the-selected-role-pending-status-and-principalid-no-manual-userid-input-on-success-navigate-to-internal-login-explicit-navigation-is-allowed",
+      "title": "Implement internal register at `/internal/daftar`: Internet Identity login is required. Show cards for Finance, Supervisor, Management, Asistenmu; selecting one creates the internal user automatically with the selected role, `PENDING` status, and principalId (no manual userId input). On success, navigate to `/internal/login` (explicit navigation is allowed).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-internal-login-at-internal-login-with-role-cards-and-routing-admin-admin-asistenmu-asistenmu-supervisor-supervisor-management-management-finance-finance-include-superadmin-claim-once-flow-show-a-superadmin-card-only-if-superadmin-has-not-been-claimed-on-first-successful-superadmin-login-auto-create-the-superadmin-user-and-then-redirect-to-superadmin-after-claim-the-superadmin-card-must-never-appear-again-if-a-principal-selects-a-role-card-that-does-not-match-their-stored-role-show-an-internal-404-style-message-in-english-click-the-workspace-that-matches-your-role-and-do-not-auto-redirect",
+      "title": "Implement internal login at `/internal/login` with role cards and routing: ADMIN -> `/admin`, ASISTENMU -> `/asistenmu`, SUPERVISOR -> `/supervisor`, MANAGEMENT -> `/management`, FINANCE -> `/finance`. Include SUPERADMIN claim-once flow: show a SUPERADMIN card only if SUPERADMIN has not been claimed; on first successful SUPERADMIN login, auto-create the SUPERADMIN user and then redirect to `/superadmin`. After claim, the SUPERADMIN card must never appear again. If a principal selects a role card that does not match their stored role, show an internal 404-style message in English: \"Click the workspace that matches your role\" and do not auto-redirect.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-client-dashboard-at-client-with-page-name-workspace-and-greeting-in-english-hi-name-here-is-your-workspace-summary-for-today-provide-tabs-summary-profile-my-services-delegation-profile-tab-must-be-read-only-and-support-copy-to-clipboard-for-client-id-ca-xxxxxx-principal-id-and-all-stored-registration-form-fields-delegation-tab-must-render-in-a-locked-state-if-the-client-has-no-services-include-a-contact-admin-button-can-be-a-placeholder-action-all-areas-must-render-safely-even-when-data-is-empty",
+      "title": "Implement the Client dashboard at `/client` with page name \"WORKSPACE\" and greeting in English: \"Hi, {Name} 👋 Here is your workspace summary for today.\" Provide tabs: Summary | Profile | My Services | Delegation. Profile tab must be read-only and support copy-to-clipboard for: Client ID (CA-XXXXXX), Principal ID, and all stored registration form fields. Delegation tab must render in a LOCKED state if the client has no services. Include a \"Contact admin\" button (can be a placeholder action). All areas must render safely even when data is empty.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-partner-dashboard-at-partner-with-a-left-sidebar-and-a-visible-pending-status-banner-when-status-is-pending-sidebar-menu-summary-profile-jobs-earnings-profile-must-be-read-only-and-support-copy-for-partner-id-pa-xxxxxx-principal-id-and-all-stored-partner-registration-fields-jobs-must-include-5-placeholder-subtabs-earnings-must-show-a-locked-financial-profile-balance-section-also-show-certificate-locked-and-asistenku-academy-coming-soon-all-areas-must-render-safely-even-when-data-is-empty",
+      "title": "Implement the Partner dashboard at `/partner` with a left sidebar and a visible PENDING status banner when status is PENDING. Sidebar menu: Summary | Profile | Jobs | Earnings. Profile must be read-only and support copy for Partner ID (PA-XXXXXX), Principal ID, and all stored partner registration fields. Jobs must include 5 placeholder subtabs. Earnings must show a LOCKED financial profile & balance section. Also show: Certificate (LOCKED) and \"Asistenku Academy\" (Coming Soon). All areas must render safely even when data is empty.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-superadmin-dashboard-at-superadmin-with-the-following-menu-sections-user-summary-financial-overview-internal-users-role-assignment-internal-access-audit-log-implement-internal-access-management-for-superadmin-view-internal-codes-in-masked-form-by-default-toggle-show-hide-copy-to-clipboard-rotate-code-a-and-code-b-including-generate-random-and-record-every-view-toggle-copy-rotate-action-into-an-audit-log-stored-in-the-backend-with-timestamp-actor-principalid-action-type-and-metadata-e-g-which-code-was-affected",
+      "title": "Implement the Superadmin dashboard at `/superadmin` with the following menu sections: User Summary, Financial Overview, Internal Users, Role Assignment, Internal Access, Audit Log. Implement Internal Access management for SUPERADMIN: view internal codes in masked form by default, toggle show/hide, copy to clipboard, rotate code A and code B (including generate random), and record every view/toggle/copy/rotate action into an Audit Log stored in the backend with timestamp, actor principalId, action type, and metadata (e.g., which code was affected).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-admin-dashboard-at-admin-with-menu-sections-client-partner-services-task-internal-access-implement-admin-internal-access-option-1-admin-cannot-view-existing-old-codes-admin-can-generate-and-apply-new-code-s-for-a-and-or-b-the-newly-generated-code-must-be-displayed-exactly-once-to-the-admin-then-hidden-and-not-retrievable-via-ui-show-last-updated-and-an-audit-trail-of-changes-in-the-ui-sourced-from-backend-audit-log",
+      "title": "Implement the Admin dashboard at `/admin` with menu sections: Client, Partner, Services, Task, Internal Access. Implement Admin Internal Access (option 1): Admin cannot view existing/old codes; Admin can generate and apply new code(s) for A and/or B. The newly generated code must be displayed exactly once to the Admin (then hidden and not retrievable via UI). Show \"last updated\" and an audit trail of changes in the UI (sourced from backend audit log).",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-minimal-internal-dashboards-for-asistenmu-supervisor-management-and-finance-that-are-safe-and-stable-even-when-data-is-empty-these-pages-must-not-crash-must-not-hide-core-ui-elements-and-should-use-locked-disabled-states-for-unavailable-data",
+      "title": "Create minimal internal dashboards for `/asistenmu`, `/supervisor`, `/management`, and `/finance` that are safe and stable even when data is empty. These pages must not crash, must not hide core UI elements, and should use locked/disabled states for unavailable data.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-one-coherent-calm-visual-theme-across-the-frontend-colors-typography-spacing-and-component-styling-that-matches-a-quiet-reassuring-structured-brand-feel-avoid-aggressive-styling-and-keep-layouts-breathable-and-consistent-do-not-use-a-blue-purple-dominant-palette",
+      "title": "Apply one coherent, calm visual theme across the frontend (colors, typography, spacing, and component styling) that matches a \"quiet, reassuring, structured\" brand feel. Avoid aggressive styling and keep layouts breathable and consistent. Do not use a blue/purple-dominant palette.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-tanstack-router-configuration-so-the-app-does-not-crash-on-initial-render-which-currently-results-in-a-blank-white-page-and-can-hang-the-preview-specifically-ensure-there-is-only-a-single-routerprovider-in-the-app-and-ensure-the-root-route-component-does-not-render-routerprovider-it-must-render-the-route-outlet-layout-instead",
+      "title": "Fix the TanStack Router configuration so the app does not crash on initial render (which currently results in a blank white page and can hang the preview). Specifically: ensure there is only a single <RouterProvider> in the app, and ensure the root route component does not render <RouterProvider> (it must render the route outlet/layout instead).",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-top-level-user-safe-runtime-error-fallback-so-that-if-any-unexpected-react-error-occurs-during-rendering-the-ui-displays-an-english-error-screen-instead-of-a-blank-white-canvas-the-fallback-must-keep-the-page-responsive-and-provide-a-simple-retry-action-e-g-reload-without-triggering-any-authentication-flows-automatically",
+      "title": "Add a top-level, user-safe runtime error fallback so that if any unexpected React error occurs during rendering, the UI displays an English error screen instead of a blank white canvas. The fallback must keep the page responsive and provide a simple retry action (e.g., reload) without triggering any authentication flows automatically.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-internal-login-page-at-route-internal-login-to-use-a-single-global-login-with-internet-identity-button-placed-above-the-role-cards-not-one-login-button-per-card",
+      "title": "Update the Internal Login page at route `/internal/login` to use a single, global “Login with Internet Identity” button placed above the role cards (not one login button per card).",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-internal-login-disable-non-interactive-the-workspace-button-in-every-role-card-until-internet-identity-login-has-completed-after-the-user-is-authenticated-enable-workspace-on-all-cards",
+      "title": "On `/internal/login`, disable (non-interactive) the “Workspace” button in every role card until Internet Identity login has completed; after the user is authenticated, enable “Workspace” on all cards.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-superadmin-role-card-displayed-before-the-admin-card-on-internal-login-and-give-it-the-same-workspace-button-behavior-as-other-roles-role-check-against-superadmin",
+      "title": "Add a SUPERADMIN role card displayed before the ADMIN card on `/internal/login`, and give it the same “Workspace” button behavior as other roles (role check against SUPERADMIN).",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-for-each-internal-role-card-on-internal-login-superadmin-admin-asistenmu-supervisor-management-finance-make-its-workspace-button-perform-a-backend-lookup-only-on-click-never-on-page-load-and-route-to-the-correct-dashboard-only-when-the-stored-backend-role-matches-the-card-s-role",
+      "title": "For each internal role card on `/internal/login` (SUPERADMIN, ADMIN, ASISTENMU, SUPERVISOR, MANAGEMENT, FINANCE), make its “Workspace” button perform a backend lookup only on click (never on page load) and route to the correct dashboard only when the stored backend role matches the card’s role.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-a-user-clicks-a-workspace-button-on-internal-login-but-the-backend-role-does-not-match-the-clicked-card-s-role-or-no-user-record-exists-route-the-user-to-an-internal-404-style-page-that-displays-the-exact-english-message-click-the-workspace-that-matches-your-role-and-includes-a-button-to-return-to-internal-login",
+      "title": "When a user clicks a “Workspace” button on `/internal/login` but the backend role does not match the clicked card’s role (or no user record exists), route the user to an internal 404-style page that displays the exact English message “Click the workspace that matches your role” and includes a button to return to `/internal/login`.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-superadmin-claim-flow-on-internal-login-so-that-clicking-the-claim-superadmin-button-always-triggers-a-visible-action-and-when-successful-creates-the-superadmin-user-and-routes-to-superadmin",
+      "title": "Fix the SUPERADMIN claim flow on `/internal/login` so that clicking the \"Claim Superadmin\" button always triggers a visible action and, when successful, creates the SUPERADMIN user and routes to `/superadmin`.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-prevent-silent-failures-on-internal-login-caused-by-the-backend-actor-not-being-ready-after-internet-identity-login-by-gating-interactivity-on-actor-readiness-and-showing-an-english-user-readable-error-if-an-action-is-attempted-while-the-actor-is-unavailable",
+      "title": "Prevent silent failures on `/internal/login` caused by the backend actor not being ready after Internet Identity login by gating interactivity on actor readiness, and showing an English, user-readable error if an action is attempted while the actor is unavailable.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-explicit-user-facing-success-loading-error-feedback-for-the-superadmin-claim-interaction-on-internal-login-without-triggering-any-automatic-authentication-flows",
+      "title": "Add explicit, user-facing success/loading/error feedback for the SUPERADMIN claim interaction on `/internal/login` (without triggering any automatic authentication flows).",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-reusable-frontend-component-named-accessgate-that-locks-protected-page-content-by-default-and-only-verifies-access-after-an-explicit-user-click-no-lifecycle-on-mount-verification-the-component-must-accept-props-expectedrole-string-onunauthorizedredirect-string-onnotregisteredredirect-string-isinternal-boolean-internalerrormessage-string-publicerrormessage-string-and-must-render-its-children-only-after-access-is-granted",
+      "title": "Create a reusable frontend component named `AccessGate` that locks protected page content by default and only verifies access after an explicit user click (no lifecycle/on-mount verification). The component must accept props: `expectedRole` (string), `onUnauthorizedRedirect` (string), `onNotRegisteredRedirect` (string), `isInternal` (boolean), `internalErrorMessage` (string), `publicErrorMessage` (string), and must render its `children` only after access is granted.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-default-accessgate-ui-locked-state-loading-state-error-state-using-the-provided-structure-but-express-all-user-facing-strings-in-english-in-the-implementation-small-horizontal-brand-logo-at-top-title-descriptive-text-primary-verify-button-loading-label-while-verifying-and-error-state-with-message-and-a-back-button",
+      "title": "Implement the default `AccessGate` UI (locked state, loading state, error state) using the provided structure, but express all user-facing strings in English in the implementation: small horizontal brand logo at top, title, descriptive text, primary verify button, loading label while verifying, and error state with message and a \"Back\" button.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-accessgate-verification-logic-strictly-on-button-click-call-the-existing-react-query-hook-for-getcalleruser-only-on-click-if-the-user-record-is-not-found-redirect-to-onnotregisteredredirect-only-after-the-click-if-the-role-mismatches-expectedrole-show-a-role-mismatch-error-state-with-the-correct-message-and-route-targets-based-on-isinternal-if-the-role-matches-grant-access-and-render-children",
+      "title": "Implement `AccessGate` verification logic strictly on button click: call the existing React Query hook for `getCallerUser` only on click; if the user record is not found, redirect to `onNotRegisteredRedirect` only after the click; if the role mismatches `expectedRole`, show a role-mismatch error state with the correct message and route targets based on `isInternal`; if the role matches, grant access and render children.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-accessgate-to-all-protected-routes-by-wrapping-the-main-content-of-each-page-and-ensuring-no-protected-page-backend-queries-execute-before-access-is-granted-routes-and-configuration-client-expectedrole-client-isinternal-false-onnotregisteredredirect-daftar-onunauthorizedredirect-login-partner-expectedrole-partner-isinternal-false-onnotregisteredredirect-daftar-onunauthorizedredirect-login-superadmin-expectedrole-superadmin-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login-admin-expectedrole-admin-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login-asistenmu-expectedrole-asistenmu-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login-supervisor-expectedrole-supervisor-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login-management-expectedrole-management-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login-finance-expectedrole-finance-isinternal-true-onnotregisteredredirect-internal-onunauthorizedredirect-internal-login",
+      "title": "Apply `AccessGate` to all protected routes by wrapping the main content of each page and ensuring no protected-page backend queries execute before access is granted. Routes and configuration: `/client` expectedRole=CLIENT isInternal=false onNotRegisteredRedirect=`/daftar` onUnauthorizedRedirect=`/login`; `/partner` expectedRole=PARTNER isInternal=false onNotRegisteredRedirect=`/daftar` onUnauthorizedRedirect=`/login`; `/superadmin` expectedRole=SUPERADMIN isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`; `/admin` expectedRole=ADMIN isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`; `/asistenmu` expectedRole=ASISTENMU isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`; `/supervisor` expectedRole=SUPERVISOR isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`; `/management` expectedRole=MANAGEMENT isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`; `/finance` expectedRole=FINANCE isInternal=true onNotRegisteredRedirect=`/internal` onUnauthorizedRedirect=`/internal/login`.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-lightweight-reusable-component-internalgateguard-that-locks-internal-login-and-internal-daftar-content-unless-the-user-has-previously-passed-internal-code-validation-in-the-current-browser-session-via-sessionstorage-flags",
+      "title": "Create a lightweight reusable component `InternalGateGuard` that locks `/internal/login` and `/internal/daftar` content unless the user has previously passed `/internal` code validation in the current browser session via sessionStorage flags.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-internal-code-entry-flow-so-that-after-a-successful-code-validation-the-app-sets-sessionstorage-internalgatepassed-true-and-sessionstorage-internalgatepassedat-timestamp-before-navigating-to-internal-login-or-internal-daftar-use-sessionstorage-not-localstorage",
+      "title": "Update the `/internal` code entry flow so that after a successful code validation, the app sets `sessionStorage.internalGatePassed = \"true\"` and `sessionStorage.internalGatePassedAt = <timestamp>` before navigating to `/internal/login` or `/internal/daftar`. Use sessionStorage (not localStorage).",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-optional-internal-gate-expiry-recommended-treat-the-internal-gate-as-valid-for-30-minutes-based-on-internalgatepassedat-if-expired-invalidate-by-clearing-the-sessionstorage-flags-and-show-the-locked-internalgateguard-state-provide-only-a-button-to-go-to-internal-do-not-auto-redirect-on-mount",
+      "title": "Implement optional internal gate expiry (recommended): treat the internal gate as valid for 30 minutes based on `internalGatePassedAt`. If expired, invalidate by clearing the sessionStorage flags and show the locked `InternalGateGuard` state (provide only a button to go to `/internal`; do not auto-redirect on mount).",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-standardize-role-mismatch-error-states-to-match-the-required-messages-and-targets-expressed-in-english-in-the-implementation-notes-but-preserving-the-exact-indonesian-meaning-public-mismatch-message-role-mismatch-must-be-shown-and-back-navigates-to-login-internal-mismatch-message-must-be-shown-and-back-navigates-to-internal-login-ensure-these-errors-are-used-consistently-by-accessgate",
+      "title": "Standardize role-mismatch error states to match the required messages and targets, expressed in English in the implementation notes but preserving the exact Indonesian meaning: Public mismatch message (role mismatch) must be shown and Back navigates to `/login`; Internal mismatch message must be shown and Back navigates to `/internal/login`. Ensure these errors are used consistently by `AccessGate`.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-update-the-internal-page-to-remove-all-local-code-compare-logic-and-use-backend-verification-only-on-clicking-continue-or-form-submit-trim-the-input-optional-and-call-backend-verifyinternalaccesscode-if-ok-true-route-path-set-sessionstorage-internalgatepassed-true-and-sessionstorage-internalgatepassedat-timestamp-then-navigate-to-the-returned-route-if-ok-false-show-the-error-message-exactly-invalid-code-please-check-and-try-again-and-do-not-navigate",
+      "title": "Frontend: Update the `/internal` page to remove all local code-compare logic and use backend verification only. On clicking “Continue” (or form submit), trim the input (optional) and call backend `verifyInternalAccessCode`. If `{ ok=true, route=?<path> }`, set `sessionStorage.internalGatePassed = \"true\"` and `sessionStorage.internalGatePassedAt = <timestamp>` then navigate to the returned route. If `{ ok=false }`, show the error message exactly: `\"Invalid code. Please check and try again.\"` and do not navigate.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-backend-add-a-superadmin-only-non-sensitive-current-stored-status-indicator-for-internal-access-codes-showing-code-a-exists-yes-no-code-b-exists-yes-no-and-last-updated-per-code-this-indicator-must-not-reveal-code-values-unless-superadmin-explicitly-clicks-an-existing-load-action-that-fetches-the-actual-code-value",
+      "title": "Frontend + Backend: Add a SUPERADMIN-only, non-sensitive “Current stored” status indicator for internal access codes showing: `Code A exists: Yes/No`, `Code B exists: Yes/No`, and `Last updated: ...` (per code). This indicator must not reveal code values unless SUPERADMIN explicitly clicks an existing “Load” action that fetches the actual code value.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-add-react-query-wiring-for-the-new-backend-methods-by-creating-a-new-mutation-hook-or-equivalent-for-verifyinternalaccesscode-and-if-implemented-a-query-or-mutation-hook-for-getinternalaccesscodemeta-update-the-superadmin-internal-access-panel-to-use-the-meta-hook-for-current-stored-indicators",
+      "title": "Frontend: Add React Query wiring for the new backend methods by creating a new mutation hook (or equivalent) for `verifyInternalAccessCode` and (if implemented) a query or mutation hook for `getInternalAccessCodeMeta`. Update the Superadmin Internal Access panel to use the meta hook for “Current stored” indicators.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-ui-only-language-toggle-en-id-in-the-app-header-top-right-defaulting-to-english-and-persist-the-selection-in-localstorage-under-key-asistenku-locale-with-values-en-or-id",
+      "title": "Add a UI-only language toggle (EN | ID) in the app header/top-right, defaulting to English, and persist the selection in localStorage under key \"asistenku_locale\" with values \"en\" or \"id\".",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-minimal-frontend-only-i18n-helper-with-a-2-locale-dictionary-en-id-and-a-t-key-function-that-returns-dictionary-locale-key-with-fallback-to-english-when-a-key-is-missing",
+      "title": "Create a minimal frontend-only i18n helper with a 2-locale dictionary (en/id) and a t(key) function that returns dictionary[locale][key] with fallback to English when a key is missing.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-only-non-technical-user-facing-ui-copy-with-t-key-using-the-provided-dictionary-keys-across-landing-register-daftar-login-login-internal-gate-internal-and-accessgate-labels-do-not-translate-or-alter-any-technical-system-debug-error-strings-backend-error-messages-roles-routes-constants-or-function-names",
+      "title": "Replace ONLY non-technical, user-facing UI copy with t(key) using the provided dictionary keys, across: Landing (/), Register (/daftar), Login (/login), Internal Gate (/internal), and AccessGate labels. Do not translate or alter any technical/system/debug/error strings, backend error messages, roles, routes, constants, or function names.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-hard-rules-to-avoid-logic-bugs-never-use-translated-strings-in-comparisons-or-branching-e-g-no-if-t-x-and-ensure-the-language-toggle-only-affects-displayed-copy-not-any-authentication-role-checking-routing-guards-or-actor-identity-behavior",
+      "title": "Enforce hard rules to avoid logic bugs: never use translated strings in comparisons or branching (e.g., no if (t(\"x\") == ...)), and ensure the language toggle only affects displayed copy, not any authentication, role checking, routing, guards, or actor/identity behavior.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-lock-the-entire-app-to-permanent-light-mode-and-never-follow-system-browser-dark-mode-by-updating-the-themeprovider-configuration-in-frontend-src-app-tsx-remove-defaulttheme-system-and-enablesystem-behavior-ensure-the-dark-class-is-never-applied",
+      "title": "Lock the entire app to permanent LIGHT mode and never follow system/browser dark mode by updating the ThemeProvider configuration in `frontend/src/App.tsx` (remove `defaultTheme=\"system\"` and `enableSystem` behavior; ensure the `dark` class is never applied).",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-global-light-theme-palette-variables-styles-to-match-the-specified-colors-without-changing-any-layout-structure-page-background-f9fafb-section-background-f9fafb-or-subtle-gradient-f9fafb-f0fbfb-card-sidebar-background-ffffff-header-background-white-85-opacity-blur-footer-background-f9fafb-border-e5e7eb-primary-text-1f2937-secondary-text-6b7280-primary-accent-teal-0ea5a5-implement-via-the-existing-tailwind-css-variable-system-in-frontend-src-index-css-or-equivalent-theme-tokens-while-ensuring-dark-mode-tokens-are-not-used-at-runtime",
+      "title": "Update global light theme palette variables/styles to match the specified colors without changing any layout/structure: page background `#F9FAFB`, section background `#F9FAFB` or subtle gradient `#F9FAFB → #F0FBFB`, card/sidebar background `#FFFFFF`, header background white ~85% opacity + blur, footer background `#F9FAFB`, border `#E5E7EB`, primary text `#1F2937`, secondary text `#6B7280`, primary accent teal `#0EA5A5`. Implement via the existing Tailwind/CSS variable system in `frontend/src/index.css` (or equivalent theme tokens), while ensuring dark mode tokens are not used at runtime.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-landing-footer-to-match-the-asistenku-only-footer-requirement-by-updating-frontend-src-components-landingfooter-tsx-so-it-renders-exactly-this-single-line-and-nothing-else-2026-asistenku-pt-asistenku-digital-indonesia-remove-the-caffeine-ai-link-and-any-built-with-love-text-ensure-the-footer-background-matches-the-specified-footer-background-and-does-not-introduce-any-additional-branding",
+      "title": "Fix the landing footer to match the Asistenku-only footer requirement by updating `frontend/src/components/LandingFooter.tsx` so it renders exactly this single line (and nothing else): `© 2026 Asistenku. PT Asistenku Digital Indonesia`. Remove the caffeine.ai link and any “Built with love…” text. Ensure the footer background matches the specified footer background and does not introduce any additional branding.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-the-exact-brand-asset-filenames-and-usage-across-the-app-landing-hero-uses-asistenku-hero-png-all-headers-dashboards-use-asistenku-horizontal-png-for-the-horizontal-logo-and-the-app-icon-favicon-uses-asistenku-icon-png-ensure-these-exact-filenames-exist-under-the-static-assets-path-used-by-frontend-src-lib-brand-ts-currently-assets-generated-and-eliminate-any-usage-of-alternate-filenames-including-the-uploaded-1-png-names-in-code",
+      "title": "Enforce the exact brand asset filenames and usage across the app: landing hero uses `asistenku-hero.png`, all headers/dashboards use `asistenku-horizontal.png` for the horizontal logo, and the app icon/favicon uses `asistenku-icon.png`. Ensure these exact filenames exist under the static assets path used by `frontend/src/lib/brand.ts` (currently `/assets/generated/...`) and eliminate any usage of alternate filenames (including the uploaded `*-1.png` names) in code.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-final-text-only-i18n-stabilization-pass-with-en-default-id-toggle-and-persistence-without-changing-routing-guards-roles-backend-logic-or-any-ui-layout-spacing-structure-1-keep-default-locale-as-english-and-persist-the-user-s-selection-in-localstorage-key-asistenku-locale-with-values-en-id-2-ensure-the-en-id-toggle-is-present-in-the-landing-header-and-in-every-dashboard-header-area-3-replace-only-non-technical-user-facing-ui-copy-across-landing-and-dashboards-with-t-key-from-frontend-src-lib-i18n-ts-expanding-the-dictionary-keys-as-needed-4-keep-all-technical-system-debug-backend-error-strings-in-english-and-never-use-translated-strings-for-logic-branching",
+      "title": "Implement the final text-only i18n stabilization pass with EN default + ID toggle and persistence without changing routing/guards/roles/backend logic or any UI layout/spacing/structure: (1) keep default locale as English and persist the user’s selection in `localStorage` key `asistenku_locale` with values `en`/`id`; (2) ensure the EN|ID toggle is present in the landing header and in every dashboard header area; (3) replace ONLY non-technical, user-facing UI copy across landing and dashboards with `t(key)` from `frontend/src/lib/i18n.ts`, expanding the dictionary keys as needed; (4) keep all technical/system/debug/backend error strings in English and never use translated strings for logic/branching.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ui-only-replace-the-currently-used-brand-icon-and-horizontal-logo-assets-with-the-newly-uploaded-images-while-keeping-the-app-s-public-asset-filenames-exactly-as-asistenku-icon-png-and-asistenku-horizontal-png-under-the-existing-static-asset-path-used-by-frontend-src-lib-brand-ts-assets-generated-ensure-there-is-no-remaining-usage-of-asistenku-icon-2-png-or-asistenku-horizontal-2-png-in-runtime-code-paths-the-runtime-must-reference-only-asistenku-icon-png-and-asistenku-horizontal-png",
+      "title": "UI-only: Replace the currently-used brand icon and horizontal logo assets with the newly uploaded images, while keeping the app’s public asset filenames exactly as `asistenku-icon.png` and `asistenku-horizontal.png` under the existing static asset path used by `frontend/src/lib/brand.ts` (`/assets/generated/...`). Ensure there is no remaining usage of `asistenku-icon-2.png` or `asistenku-horizontal-2.png` in runtime code/paths; the runtime must reference only `asistenku-icon.png` and `asistenku-horizontal.png`.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ui-only-fix-logo-rendering-everywhere-the-horizontal-logo-is-used-landing-header-dashboard-headers-sidebar-so-it-renders-as-a-clean-transparent-png-without-any-color-inversion-or-dark-mode-effects-update-the-brandlogo-component-usage-implementation-and-or-surrounding-styles-to-guarantee-transparent-background-no-css-filters-including-invert-brightness-contrast-drop-shadow-and-a-consistent-rendered-height-28-32px-while-preserving-aspect-ratio-remove-any-fallback-logo-logic-so-only-asistenku-horizontal-png-is-used",
+      "title": "UI-only: Fix logo rendering everywhere the horizontal logo is used (landing header, dashboard headers, sidebar) so it renders as a clean transparent PNG without any color inversion or dark-mode effects. Update the `BrandLogo` component usage/implementation and/or surrounding styles to guarantee: transparent background; no CSS filters (including `invert()`, `brightness()`, `contrast()`, `drop-shadow()`); and a consistent rendered height ~28–32px while preserving aspect ratio. Remove any fallback logo logic so only `asistenku-horizontal.png` is used.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ui-only-make-every-whatsapp-cta-on-the-landing-page-a-real-clickable-link-a-href-while-keeping-the-existing-button-appearance-unchanged-specifically-update-all-existing-ngobrol-dulu-buttons-and-any-whatsapp-ctas-in-the-hero-services-cards-tenang-rapi-fokus-jaga-comparison-section-cta-and-faq-small-cta-so-they-use-https-wa-me-628817743613-text-url-encoded-text-with-the-exact-specified-auto-text-per-location-the-link-must-include-target-blank-and-rel-noopener-noreferrer-do-not-use-onclick-only-logic-ensure-no-overlay-blocks-clicks-and-ensure-the-clickable-element-has-pointer-events-auto",
+      "title": "UI-only: Make every WhatsApp CTA on the landing page a real clickable link (`<a href>`), while keeping the existing button appearance unchanged. Specifically, update all existing “Ngobrol dulu” buttons and any WhatsApp CTAs in the Hero, services cards (Tenang/Rapi/Fokus/Jaga), comparison section CTA, and FAQ small CTA so they use `https://wa.me/628817743613?text=URL_ENCODED_TEXT` with the exact specified auto-text per location. The link must include `target=\"_blank\"` and `rel=\"noopener noreferrer\"`. Do not use onClick-only logic; ensure no overlay blocks clicks and ensure the clickable element has `pointer-events: auto`.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ui-only-restore-the-landing-page-footer-content-without-changing-any-landing-sections-above-the-footer-update-frontend-src-components-landingfooter-tsx-to-include-1-calm-closing-text-keep-current-tone-2-a-clickable-whatsapp-contact-link-using-the-same-wa-me-format-and-number-628817743613-url-encoded-text-can-be-a-sensible-default-using-one-of-the-provided-phrases-but-must-be-a-wa-me-link-3-visible-legal-links-syarat-ketentuan-linking-to-syarat-ketentuan-and-kebijakan-privasi-linking-to-kebijakan-privasi-and-4-copyright-text-exactly-2026-asistenku-pt-asistenku-digital-indonesia-remove-any-built-with-caffeine-ai-built-with-caffeine-build-by-text-if-present-anywhere-in-the-landing-footer",
+      "title": "UI-only: Restore the landing page footer content without changing any landing sections above the footer. Update `frontend/src/components/LandingFooter.tsx` to include: (1) calm closing text (keep current tone), (2) a clickable WhatsApp contact link using the same wa.me format and number `628817743613` (URL-encoded text can be a sensible default using one of the provided phrases, but must be a wa.me link), (3) visible legal links: “Syarat & Ketentuan” linking to `/syarat-ketentuan` and “Kebijakan Privasi” linking to `/kebijakan-privasi`, and (4) copyright text exactly: `© 2026 Asistenku — PT Asistenku Digital Indonesia`. Remove any “Built with caffeine.ai / Built with Caffeine / build by …” text if present anywhere in the landing footer.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ui-only-create-two-simple-static-legal-pages-with-calm-light-styling-syarat-ketentuan-and-kebijakan-privasi-each-page-must-include-a-title-a-short-placeholder-paragraph-and-a-link-labeled-kembali-ke-beranda-that-navigates-to",
+      "title": "UI-only: Create two simple static legal pages with calm light styling: `/syarat-ketentuan` and `/kebijakan-privasi`. Each page must include a title, a short placeholder paragraph, and a link labeled “Kembali ke Beranda” that navigates to `/`.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-patch-the-internal-code-gate-page-internal-frontend-src-pages-internalgatepage-tsx-to-remove-all-client-side-code-comparison-and-to-never-navigate-to-internal-register-on-submit-call-the-existing-backend-verification-method-verifyinternalaccesscode-inputcode-trim-input-and-1-if-ok-true-and-route-is-returned-set-sessionstorage-internalgatepassed-true-and-sessionstorage-internalgatepassedat-timestamp-then-navigate-exactly-to-the-returned-route-expected-internal-daftar-or-internal-login-only-2-if-ok-false-show-the-error-state-and-do-not-navigate",
+      "title": "Patch the internal code-gate page `/internal` (frontend/src/pages/InternalGatePage.tsx) to remove all client-side code comparison and to never navigate to `/internal/register`. On submit, call the existing backend verification method `verifyInternalAccessCode(inputCode)` (trim input) and: (1) if `ok === true` and `route` is returned, set `sessionStorage.internalGatePassed = \"true\"` and `sessionStorage.internalGatePassedAt = <timestamp>`, then navigate EXACTLY to the returned `route` (expected: `/internal/daftar` or `/internal/login` only); (2) if `ok === false`, show the error state and do not navigate.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-any-fallback-redirect-or-navigation-to-internal-register-across-the-frontend-codebase-and-do-not-add-any-new-route-named-internal-register-or-register-ensure-the-internal-registration-route-is-internal-daftar-only-as-already-defined-in-frontend-src-app-tsx",
+      "title": "Remove any fallback redirect or navigation to `/internal/register` across the frontend codebase, and do not add any new route named `/internal/register` or `/register`. Ensure the internal registration route is `/internal/daftar` only (as already defined in frontend/src/App.tsx).",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-patch-internal-login-role-checks-in-internal-login-frontend-src-pages-internalloginpage-tsx-to-normalize-role-values-from-the-backend-and-to-route-mismatches-to-the-internal-role-mismatch-page-not-register-flows-implement-role-normalization-as-rolenormalized-profile-role-trim-touppercase-and-use-it-for-comparisons-ensure-each-role-card-checks-exactly-one-required-uppercase-role-admin-asistenmu-supervisor-management-finance-and-routes-to-admin-asistenmu-supervisor-management-finance-respectively-keep-the-existing-behavior-that-getcalleruser-is-called-only-on-workspace-button-click-never-on-page-load",
+      "title": "Patch internal login role checks in `/internal/login` (frontend/src/pages/InternalLoginPage.tsx) to normalize role values from the backend and to route mismatches to the internal role-mismatch page (not register flows). Implement role normalization as: `roleNormalized = (profile?.role ?? \"\").trim().toUpperCase()` and use it for comparisons. Ensure each role card checks exactly one required UPPERCASE role: ADMIN/ASISTENMU/SUPERVISOR/MANAGEMENT/FINANCE and routes to `/admin`, `/asistenmu`, `/supervisor`, `/management`, `/finance` respectively. Keep the existing behavior that `getCallerUser` is called only on Workspace button click (never on page load).",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-internal-role-mismatch-page-frontend-src-pages-internal-internalrolemismatchpage-tsx-to-use-the-exact-user-facing-message-required-by-the-patch-spec-and-to-keep-a-single-button-that-navigates-back-to-internal-login-required-message-text-to-display-klik-di-ruang-kerja-yang-sesuai-dengan-bagian-role-kamu",
+      "title": "Update the internal role-mismatch page (frontend/src/pages/internal/InternalRoleMismatchPage.tsx) to use the exact user-facing message required by the patch spec and to keep a single button that navigates back to `/internal/login`.\n\nRequired message text to display:\n\"Klik di Ruang kerja yang sesuai dengan bagian/role kamu\"",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-patch-the-reusable-accessgate-component-frontend-src-components-accessgate-tsx-to-normalize-role-values-before-comparison-using-trim-touppercase-and-to-treat-pending-as-a-valid-status-do-not-block-verification-solely-because-status-is-pending-define-normalized-status-as-valid-if-it-exists-in-active-pending-active-pending-when-stringified-but-do-not-require-active-for-access-access-should-be-granted-based-on-role-match-and-the-presence-of-a-profile-record-profile-exists-if-user-null-and-normalized-role-is-non-empty-remove-any-redirect-mismatch-behavior-that-routes-to-internal-register-none-should-exist-after-req-62",
+      "title": "Patch the reusable `AccessGate` component (frontend/src/components/AccessGate.tsx) to normalize role values before comparison using `trim().toUpperCase()` and to treat `pending` as a valid status (do not block verification solely because status is pending). Define normalized status as valid if it exists in `[\"#active\", \"#pending\", \"active\", \"pending\"]` when stringified, but do not require `active` for access. Access should be granted based on role match and the presence of a profile record (profile exists if `user != null` and normalized role is non-empty). Remove any redirect/mismatch behavior that routes to `/internal/register` (none should exist after REQ-62).",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-protected-internal-dashboards-superadmin-admin-asistenmu-supervisor-management-finance-continue-to-not-auto-call-getcalleruser-on-mount-verification-must-happen-only-after-an-explicit-user-action-e-g-the-existing-verify-button-in-accessgate-pending-status-must-not-block-entry-when-role-matches-optionally-display-a-small-non-blocking-banner-such-as-pending-activation-after-access-is-granted-for-internal-roles-when-status-is-pending-do-not-change-any-layout-theme",
+      "title": "Ensure all protected internal dashboards (`/superadmin`, `/admin`, `/asistenmu`, `/supervisor`, `/management`, `/finance`) continue to not auto-call `getCallerUser` on mount. Verification must happen only after an explicit user action (e.g., the existing verify button in AccessGate). Pending status must not block entry when role matches; optionally display a small non-blocking banner such as \"Pending activation\" after access is granted for internal roles when status is pending (do not change any layout/theme).",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Create Landing Page `/` (info-only) with specified header/hero/sections/FAQ/footer and CTAs only to /daftar and /login; use provided images/logo; no II login on landing",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Implement Public Register `/daftar` for CLIENT & PARTNER: Internet Identity auth only before submit; create users automatically with roles/status (CLIENT ACTIVE, PARTNER PENDING), generate CA-XXXXXX/PA-XXXXXX, store principalId + form fields, and provide button to respective dashboards; no auto-redirect",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Implement Public Login `/login` with two cards (Client/Partner), II login per card, \"Ruang kerja saya\" button, enforce single-role per principalId and show public mismatch error",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Implement Internal Gate `/internal` with backend-stored codes (KODE_A_DAFTAR, KODE_B_LOGIN) routing to /internal/daftar or /internal/login; manual access via URL and code input",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Implement Internal Register `/internal/daftar` (Finance/Supervisor/Management/Asistenmu cards): II required; auto-create internal users with PENDING status; success redirects to /internal/login",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Implement Internal Login `/internal/login` with role cards and routing; SUPERADMIN claim-once flow (card only until claimed), mismatch shows internal 404 message",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Build Client Dashboard `/client` (RUANG KERJA) with tabs Ringkasan/Profil/Layananku/Delegasi; profile read-only+copy fields incl Client ID & Principal ID and saved form data; Delegasi locked if no layanan; button Hubungi admin",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Build Partner Dashboard `/partner` with sidebar, PENDING banner, menu Ringkasan/Profil/Pekerjaan (5 placeholder subtabs)/Pendapatan (locked); profile read-only+copy incl Partner ID & Principal ID and saved form data; Sertifikat locked; Akademi Coming Soon",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Build Superadmin Dashboard `/superadmin` with menus incl Internal Access and Audit Log; Internal Access supports masked code view, show/hide, copy, rotate codes A/B, generate random, all actions recorded in Audit Log",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Build Admin Dashboard `/admin` with menus Client/Partner/Layanan/Task/Internal Access; Internal Access (Admin option) can generate & apply new codes (display once), cannot view old codes, shows last updated + audit trail",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Create minimal internal dashboards for /asistenmu, /supervisor, /management, /finance that render safely even when data is empty",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Implement backend user model and authorization rules to support all roles and constraints: roles (SUPERADMIN, CLIENT, PARTNER, ADMIN, ASISTENMU, SUPERVISOR, MANAGEMENT, FINANCE), one principalId per role (no multi-role), automatic ID generation for all users (no userId input), status handling (ACTIVE/PENDING), and APIs needed by the frontend flows (register, login lookup, internal code validation, dashboards profile fetch). Ensure no API causes role-based auto-redirect loops; all pages must be able to render without requiring immediate caller lookups.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Revise Internal Login `/internal/login` UX + access control: add one global Internet Identity login button above all role cards; disable all \"Ruang Kerja\" buttons until II login completes; each card’s \"Ruang Kerja\" button only checks that specific role via backend lookup and routes to its dashboard when matched; on mismatch route to an internal 404 page with message \"Click the workspace that matches your role\" and a back button; include SUPERADMIN card placed before ADMIN with the same role-check behavior.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Add reusable global AccessGate component for all protected pages: renders locked UI by default and only on user click calls getCallerUser once, handles not-registered redirect, role-mismatch error messaging (public/internal), and grants access to render children; absolutely no getCallerUser/redirect on mount.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Enforce Internal Code Gate for /internal/login and /internal/daftar: on successful code entry at /internal set sessionStorage flags internalGatePassed + internalGatePassedAt (30-min expiry suggested); create InternalGateGuard that locks internal login/register pages unless flag is present, with button to go to /internal; no auto-redirect on mount.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "PATCH: Fix /internal access code validation to be 100% backend source-of-truth. Add backend query verifyInternalAccessCode(trimmed input) returning {ok, route?, reason?} by comparing ONLY against stored internalCodes values for keys KODE_A_DAFTAR/KODE_B_LOGIN; initialize default codes only if internalCodes is empty (audit log event). Update frontend /internal to call backend verify, set sessionStorage internalGatePassed/internalGatePassedAt on success and route from backend response; no frontend hardcoded/compare logic. Add SUPERADMIN non-sensitive meta indicators (code exists Yes/No + last updated) and optional superadmin-only getInternalAccessCodeMeta() query.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Backend: Add a public query method `verifyInternalAccessCode(inputCode: Text) : async { ok: Bool; route: ?Text; reason: ?Text }` that is the single source of truth for `/internal` access-code validation. The method must: (1) normalize `inputCode` with `Text.trim`, (2) read stored codes from `internalCodes` using keys exactly `\"KODE_A_DAFTAR\"` and `\"KODE_B_LOGIN\"`, (3) compare ONLY against the stored `.code` field (not the key string and not `codeType`), (4) return `{ ok=true; route=?\"/internal/daftar\"; reason=null }` when input matches Code A, `{ ok=true; route=?\"/internal/login\"; reason=null }` when input matches Code B, otherwise `{ ok=false; route=null; reason=?\"INVALID_CODE\" }`.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Backend: Fix default internal-code initialization so defaults are initialized ONLY when `internalCodes` is empty, and do not overwrite existing stored codes on every canister start/upgrade. Defaults must be set exactly to: `KODE_A_DAFTAR = \"Asistenku-daftar-2026\"` and `KODE_B_LOGIN = \"Asistenku-login\"`. Record an audit log event with metadata exactly `\"Initialized default internal access codes\"` when defaults are initialized.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Backend (optional but requested): Add a SUPERADMIN-only query `getInternalAccessCodeMeta() -> { hasA: Bool; hasB: Bool; aUpdated: Nat; bUpdated: Nat }` used by the Superadmin UI to render the non-sensitive “Current stored” indicators.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Frontend-only UI language toggle (EN/ID) with default EN and localStorage persistence (key: asistenku_locale). Implement minimal i18n helper t(key) + dictionary (en/id) and translate ONLY non-technical user-facing copy across landing/register/login/internal/accessgate labels; keep all technical/system/error/debug notices in English; no backend/canister/actor/role/route/constant changes; never use translated strings in logic comparisons.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Visual stabilization pass: lock app theme to permanent LIGHT mode (do not follow system), using specified palette (bg #F9FAFB, cards/sidebars #FFF, borders #E5E7EB, text #1F2937/#6B7280, primary teal #0EA5A5) without changing any layout/structure.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Asset lock/fix: enforce exact static asset filenames and usage — landing hero uses asistenku-hero.png; header/dashboard logo uses asistenku-horizontal.png; app icon/favicon uses asistenku-icon.png; do not use other asset names and ensure they render correctly.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "i18n text-only pass: default EN with EN|ID toggle in landing header and all dashboard headers; persist locale in localStorage key asistenku_locale (en/id); move all landing & dashboard UI copy to dictionary+t(key) while keeping technical/system messages in English; do not change routing/guards/roles/backend/layout.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "UI-only: Make ALL WhatsApp CTAs (e.g., “Ngobrol dulu” buttons incl. hero/services/comparison/FAQ CTAs) real clickable <a href> links to https://wa.me/628817743613?text=URL_ENCODED_TEXT with target=\"_blank\" rel=\"noopener noreferrer\"; keep button look unchanged; remove/avoid overlays blocking clicks and ensure pointer-events:auto.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "UI-only: Restore landing footer content (do not change sections above footer): include calm closing text, clickable WhatsApp contact link (wa.me), visible legal links “Syarat & Ketentuan” -> /syarat-ketentuan and “Kebijakan Privasi” -> /kebijakan-privasi, and copyright text exactly “© 2026 Asistenku — PT Asistenku Digital Indonesia”; remove any “Built with caffeine.ai / built by …” lines. Also create simple static legal pages at /syarat-ketentuan and /kebijakan-privasi with title + short placeholder paragraph + “Kembali ke Beranda” link, matching calm light style.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "UI-only: Fix header/dashboard logo rendering to use ONLY asistenku-horizontal.png (transparent PNG), not color-inverted and unaffected by dark-mode filters; no CSS filters (invert/brightness/contrast/drop-shadow), transparent background, height ~28–32px, keep aspect ratio; remove any fallback logo usage. Do NOT change hero visual/layout/text/spacing/background/image rendering.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "BACKEND ONLY PATCH (main.mo / UserProfile contract): standardize roles stored/validated as UPPERCASE only; expand UserStatus to active/pending/suspended/blacklisted with lifecycle rules; replace profile schema to match UI forms (clientData: name/email/whatsapp/company; partnerData: name/email/whatsapp/skills/domisili; internalData: name/email/whatsapp) and update UserProfile accordingly; update registerClient/registerPartner/registerInternalUser signatures to match; update getDefaultPartnerProfile to role=PARTNER status=pending with empty-string partnerData; keep existing storage maps, public function names where possible, ID generation logic, routing/guards, and getCallerUser/getUserProfile access rules; do not change internal code logic except role casing checks.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Update backend role storage and validation to be consistent UPPERCASE-only across the canister. Store all roles in user profiles as one of these exact UPPERCASE strings only: \"SUPERADMIN\",\"ADMIN\",\"ASISTENMU\",\"SUPERVISOR\",\"MANAGEMENT\",\"FINANCE\",\"CLIENT\",\"PARTNER\". Update `isValidRoleName(roleName)` to return true only for these UPPERCASE values. Ensure any role input (e.g., internal registration) is normalized to uppercase before storing, and ensure all role checks use UPPERCASE consistently (including admin/superadmin authorization checks and hasClients/hasPartners filters).",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Replace the current `UserStatus` definition with a four-state model and update all references accordingly. `UserStatus` must be exactly: `#active`, `#pending`, `#suspended`, `#blacklisted`. Apply lifecycle rules in creation logic: CLIENT created as `#active`; PARTNER created as `#pending`; SUPERADMIN created as `#active`; internal users created as `#pending`.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Replace the old registration/profile schema modules in `backend/main.mo` to match the actual UI forms. Remove/stop using the old `RegistrationData` and old `PartnerRegistrationData` business schema fields. Create/replace modules/types exactly as: `ClientRegistrationData { name: Text; email: Text; whatsapp: Text; company: Text }`, `PartnerRegistrationData { name: Text; email: Text; whatsapp: Text; skills: Text; domisili: Text }`, `InternalRegistrationData { name: Text; email: Text; whatsapp: Text }`. Update `UserProfile` type to: `id: Text; principalId: Text; role: Text; status: UserStatus.UserStatus; clientData: ?ClientRegistrationData.ClientRegistrationData; partnerData: ?PartnerRegistrationData.PartnerRegistrationData; internalData: ?InternalRegistrationData.InternalRegistrationData`. Enforce the nullability rules per role (only one of the optional data fields is set depending on role).",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-46",
+      "summary": "Update the public registration functions’ signatures and implementations in `backend/main.mo` to match the UI form fields while preserving existing ID generation logic and existing storage maps. Required signatures: `registerClient(name: Text, email: Text, whatsapp: Text, company: Text) : async Text`; `registerPartner(name: Text, email: Text, whatsapp: Text, skills: Text, domisili: Text) : async Text`; `registerInternalUser(role: Text, name: Text, email: Text, whatsapp: Text) : async Text`. These functions must continue to enforce “caller not anonymous” and “one principal has only one profile” behavior. Internal role validation must accept only the 5 internal roles (UPPERCASE). Internal status must be `#pending`.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-47",
+      "summary": "Keep `claimSuperadmin()` behavior the same while aligning it to the new profile schema. It must: (1) create the profile only if `superadminClaimed == false` and caller has no existing profile, (2) store role as \"SUPERADMIN\" (UPPERCASE), (3) store status as `#active`, and (4) under the new schema, allow SUPERADMIN `internalData` to exist with empty-string fields for now (and all other data blocks null).",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Update `getDefaultPartnerProfile()` to return a safe default `UserProfile` for UI rendering under the new schema, specifically: `role = \"PARTNER\"`, `status = #pending`, `partnerData = ?{ name=\"\"; email=\"\"; whatsapp=\"\"; skills=\"\"; domisili=\"\" }`, and `clientData = null`, `internalData = null`.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Ensure compilation safety after the breaking type change by updating all `backend/main.mo` references to the old modules/fields and keeping key behaviors unchanged: (1) do not change `generateClientId()` / `generatePartnerId()` logic, (2) keep `getCallerUser()` behavior unchanged (still returns the caller’s `?UserProfile`), (3) keep `getUserProfile()` access rules unchanged (owner OR ADMIN/SUPERADMIN), and (4) do not change internal access code logic except role casing checks needed for UPPERCASE standardization.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Frontend-only guard patch (no backend/theme changes): update InternalGateGuard/AccessGate/internal login guards to normalize role to UPPERCASE and treat pending as valid; remove any fallback redirects to /internal/register (do not create that route); internal mismatches must route to internal 404 page with back to /internal/login; /internal code-gate must navigate only to backend-returned /internal/daftar or /internal/login via verifyInternalAccessCode.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Patch `InternalGateGuard` (frontend/src/components/InternalGateGuard.tsx) to remain a session-only gate (no backend calls) and to ensure it never redirects to `/internal/register` under any condition. When the gate is not passed or is expired, it must render its locked state and only provide navigation to `/internal` (code gate).",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "BACKEND ONLY: Implement Asistenku core backend modules in main.mo (extend-only, no changes to existing user/role/ID logic) covering: (1) Services (Service model, storage maps, admin/superadmin-only create & status, client/admin accessors, hasActiveServiceForCaller, superadmin-only service stats); (2) Tasks (Task model, storage maps, client-only create gated by active service, assignment/status updates by ASISTENMU/ADMIN/SUPERADMIN, client/partner task queries); (3) Partner Wallet (wallet model, zero-safe getMyWallet, withdraw request tracking with PENDING/APPROVED/REJECTED, approve by ADMIN/SUPERADMIN); (4) Financial Summary aggregation (GMV sums by status/package, totalPartnerPayout, grossMargin) with superadmin-only getFinancialSummary. All query/list endpoints must be empty-safe ([], 0) with no traps on missing data; no auto/background actions.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Backend-only: Extend `backend/main.mo` with a new Services module that introduces the Service data model and storage indexes, without changing any existing User/Role/ID logic or existing userProfiles maps.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-55",
+      "summary": "Backend-only: Implement Services endpoints with explicit, role-based authorization rules and empty-safe reads.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-56",
+      "summary": "Backend-only: Extend `backend/main.mo` with a new Tasks module that introduces the Task data model and storage indexes, without changing any existing User/Role/ID logic.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Backend-only: Implement Tasks endpoints with explicit-only behavior (no auto assignment/transitions) and empty-safe reads. `createTask` must require an ACTIVE service and trap with a clear message when blocked.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-58",
+      "summary": "Backend-only: Extend `backend/main.mo` with a new Partner Wallet module including wallet and withdrawal-request data models and storage, ensuring `getMyWallet` is zero-safe and never traps for missing wallets.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-59",
+      "summary": "Backend-only: Implement Financial Summary aggregation and endpoint for SUPERADMIN with fully empty-safe 0/empty-map outputs when services/wallets are absent.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Asistenku",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

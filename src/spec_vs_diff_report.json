@@ -1,0 +1,101 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-07T06:04:41.337Z",
+  "summary": "The diff does not implement the requested backend-only core modules as specified. Although `backend/main.mo` now contains `module Service` and `module Task`, their data models do not match the required fields/types, and the diff summary provides no evidence of the required storage maps or endpoints for Services, Tasks, Partner Wallet, or Financial Summary. Additionally, there is evidence of unrelated additions (migration wiring, audit log/internal access code modules) and evidence pointing to frontend/routing/theme work despite the backend-only constraint.",
+  "missing_requirements": [
+    {
+      "id": "REQ-67",
+      "requirement": "Define the Service model with the exact required fields/types and add `servicesById` and `servicesByClientId` maps in `backend/main.mo` without changing existing user/role/ID logic.",
+      "reason": "The diff shows a `module Service` but with a completely different `Service` record shape (e.g., `id`, `code`, `title`, many extra fields, and `status` as a variant), not the required `serviceId/clientId/packageName/priceIdr/status(createdAt/updatedAt)` schema. The required storage maps are not evidenced in the truncated diff.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-68",
+      "requirement": "Implement Services endpoints (`createService`, `setServiceStatus`, `getServicesByClientId`, `hasActiveServiceForCaller`, `getServiceStats`) with the specified role-based authorization and empty-safe behavior.",
+      "reason": "The provided `backend/main.mo` snippet only shows type modules; there is no evidence in the diff summary of the required public actor methods/endpoints or the specified stats aggregation behavior and empty-safe reads.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-69",
+      "requirement": "Define the Task model with the exact required fields/types and add `tasksById`, `tasksByClientId`, `tasksByPartnerId` maps in `backend/main.mo` without changing existing user/role/ID logic.",
+      "reason": "The diff shows a `module Task` but with a very different model (many unrelated fields, no `taskId/clientId/partnerId?/statusInternal/createdAt/updatedAt` as specified). The required storage maps are not evidenced in the truncated diff.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-70",
+      "requirement": "Implement Tasks endpoints (`createTask` gated by active service, `assignTask`, `setTaskStatus`, `getMyClientTasks`, `getMyPartnerTasks`) with explicit-only behavior and empty-safe reads/updates.",
+      "reason": "No evidence in the diff summary of these endpoints, the required active-service check with an English user-readable trap message, index maintenance, or empty-safe/no-trap handling for missing map entries/IDs.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "requirement": "Add Partner Wallet and Withdrawal Request models, storage maps, and endpoints (`getMyWallet`, `requestWithdraw`, `approveWithdraw`) with empty-safe, no-background-action behavior.",
+      "reason": "No evidence in the diff summary of `PartnerWallet`, withdrawal request model/storage (`walletByPartnerId`, `withdrawRequestsById`, etc.), or the required wallet/withdraw endpoints and behaviors.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-72",
+      "requirement": "Implement `getFinancialSummary()` for SUPERADMIN aggregating service GMV and partner payouts with fully empty-safe zero/empty-map outputs and Nat-safe subtraction.",
+      "reason": "No evidence in the diff summary of a `getFinancialSummary` endpoint or any aggregation logic over services/wallets.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Migration module and actor wiring via `Migration.run` (state migration scaffolding).",
+      "reason": "The BuildRequest constraints specify backend-only changes in `backend/main.mo` and do not request adding migration infrastructure/files.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "New AuditLogEntry module and internal access-code related modules/types.",
+      "reason": "Not requested by any of REQ-67 to REQ-72; these are unrelated to Services/Tasks/Partner Wallet/Financial Summary.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "A different, expanded `Service` model with many fields (e.g., `code`, `title`, `category`, images, `available`, variant `Status` with many cases) instead of the specified minimal service fields.",
+      "reason": "The BuildRequest explicitly requires `Service` to have exactly the specified fields/types and package/status values.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "A different, expanded `Task` model (schedule, paymentStatus, taskStatus, many metadata fields) rather than the specified Task schema with `statusInternal` and client/partner IDs.",
+      "reason": "The BuildRequest explicitly requires `Task` to have exactly the specified fields/types.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Frontend routing/theme/i18n work indicated by the diff summary (new routes, ThemeProvider forced to light mode, React Query hook updates, multiple page/component changes).",
+      "reason": "The BuildRequest constraints explicitly disallow modifying frontend files, routing, guards, theme, or UI; and state the work is backend-only.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.74,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "project_state.json"
+  ]
+}
