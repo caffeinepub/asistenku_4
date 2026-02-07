@@ -7,11 +7,13 @@ import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
 import Array "mo:core/Array";
 import Time "mo:core/Time";
-
+import Int "mo:core/Int";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Iter "mo:core/Iter";
 import Migration "migration";
 
+// Apply migration on upgrade
 (with migration = Migration.run)
 actor {
   module AuditLogEntry {
@@ -45,6 +47,11 @@ actor {
       codeType : InternalCodeType;
       lastUpdated : Nat;
     };
+  };
+
+  module AuditLog {
+    public type AuditLogEntry = AuditLogEntry.AuditLogEntry;
+    public type AuditActionType = AuditLogEntry.AuditActionType;
   };
 
   module InternalRegistrationData {
@@ -83,6 +90,15 @@ actor {
       clientData : ?ClientRegistrationData.ClientRegistrationData;
       partnerData : ?PartnerRegistrationData.PartnerRegistrationData;
       internalData : ?InternalRegistrationData.InternalRegistrationData;
+    };
+  };
+
+  module AsistenmuCandidateDTO {
+    public type AsistenmuCandidateDTO = {
+      principalId : Text;
+      name : Text;
+      role : Text;
+      status : UserStatus.UserStatus;
     };
   };
 
@@ -190,6 +206,38 @@ actor {
     };
   };
 
+  module MinimalTask {
+    public type TaskStatusInternal = {
+      #REQUESTED;
+      #IN_PROGRESS;
+      #QA_ASISTENMU;
+      #REVISION;
+      #DONE;
+    };
+
+    public type RequestType = {
+      #NORMAL;
+      #PRIORITY;
+      #URGENT;
+    };
+
+    public type TaskRecord = {
+      taskId : Text;
+      clientId : Text;
+      createdByPrincipal : Principal;
+      title : Text;
+      description : Text;
+      clientDeadline : ?Nat;
+      internalDeadline : ?Nat;
+      assignedPartnerId : ?Text;
+      assignedAsistenmuName : Text;
+      statusInternal : TaskStatusInternal;
+      createdAt : Nat;
+      updatedAt : Nat;
+      requestType : RequestType;
+    };
+  };
+
   module FinancialPartnerData {
     public type FinancialPartnerData = {
       id : Text;
@@ -218,6 +266,59 @@ actor {
     };
   };
 
+  module LayanankuKind {
+    public type LayananKind = { #TENANG; #RAPI; #FOKUS; #JAGA };
+  };
+
+  module LayanankuStatus {
+    public type LayananStatus = { #active; #inactive; #expired };
+  };
+
+  module LayanankuRecord {
+    public type LayanankuRecord = {
+      id : Text;
+      kind : LayanankuKind.LayananKind;
+      startAt : Nat;
+      endAt : Nat;
+      status : LayanankuStatus.LayananStatus;
+      sharePrincipals : [Text];
+      hargaPerLayanan : Nat;
+      clientId : Text;
+      createdAt : Nat;
+      updatedAt : Nat;
+      asistenmuPrincipalId : ?Text;
+      asistenmuNameSnapshot : ?Text;
+    };
+
+    public type LayanankuPublic = {
+      id : Text;
+      kind : LayanankuKind.LayananKind;
+      startAt : Nat;
+      endAt : Nat;
+      status : LayanankuStatus.LayananStatus;
+      sharePrincipals : [Text];
+      createdAt : Nat;
+      updatedAt : Nat;
+    };
+  };
+
+  module ExtendedLayanankuRecord {
+    public type ExtendedLayanankuRecord = {
+      id : Text;
+      kind : LayanankuKind.LayananKind;
+      startAt : Nat;
+      endAt : Nat;
+      status : LayanankuStatus.LayananStatus;
+      sharePrincipals : [Text];
+      hargaPerLayanan : Nat;
+      clientId : Text;
+      createdAt : Nat;
+      updatedAt : Nat;
+      asistenmuPrincipalId : ?Text;
+      asistenmuName : ?Text;
+    };
+  };
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -226,6 +327,7 @@ actor {
   var superadminClaimed = false;
   var _isInitialized = false;
   var auditLogCounter = 0;
+  var layanankuCounter = 0;
 
   let internalCodes = Map.empty<Text, InternalAccessCode.InternalAccessCode>();
   let userProfilesById = Map.empty<Text, UserProfile.UserProfile>();
@@ -236,23 +338,30 @@ actor {
   let tasks = Map.empty<Text, Task.Task>();
   let partnerWallets = Map.empty<Text, FinancialPartnerData.FinancialPartnerData>();
 
-  // Valid roles definition
+  let layanankuById = Map.empty<Text, LayanankuRecord.LayanankuRecord>();
+  let layanankuByClientId = Map.empty<Text, [LayanankuRecord.LayanankuRecord]>();
+
+  var taskCounter = 0;
+  let tasksById = Map.empty<Text, MinimalTask.TaskRecord>();
+  let taskIdsByClientId = Map.empty<Text, [Text]>();
+  let taskIdsByPartnerId = Map.empty<Text, [Text]>();
+
   let validRoles = Set.fromArray([
-    "SUPERADMIN", "ADMIN", "ASISTENMU", "SUPERVISOR", "MANAGEMENT", "FINANCE", "CLIENT", "PARTNER"
+    "SUPERADMIN", "ADMIN", "ASISTENMU", "SUPERVISOR", "MANAGEMENT", "FINANCE", "CLIENT", "PARTNER",
   ]);
 
   let internalRoles = Set.fromArray([
-    "ADMIN", "ASISTENMU", "SUPERVISOR", "MANAGEMENT", "FINANCE"
+    "ADMIN", "ASISTENMU", "SUPERVISOR", "MANAGEMENT", "FINANCE",
   ]);
 
   func normalizeRole(role : Text) : Text {
     role.map(func(c : Char) : Char {
       if (c >= 'a' and c <= 'z') {
-        Char.fromNat32(Char.toNat32(c) - 32)
+        Char.fromNat32(Char.toNat32(c) - 32);
       } else {
-        c
-      }
-    })
+        c;
+      };
+    });
   };
 
   func isValidRole(role : Text) : Bool {
@@ -265,7 +374,7 @@ actor {
 
   func isAdminOrHigher(role : Text) : Bool {
     let normalized = normalizeRole(role);
-    normalized == "SUPERADMIN" or normalized == "ADMIN"
+    normalized == "SUPERADMIN" or normalized == "ADMIN";
   };
 
   func isSuperadmin(role : Text) : Bool {
@@ -276,7 +385,6 @@ actor {
     isValidRole(roleName);
   };
 
-  // Default profile for UI rendering
   public query ({ caller }) func getDefaultPartnerProfile() : async UserProfile.UserProfile {
     let dummyPartnerData : PartnerRegistrationData.PartnerRegistrationData = {
       name = "";
@@ -296,7 +404,6 @@ actor {
     };
   };
 
-  // Profile access functions required by frontend
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile.UserProfile {
     if (caller.isAnonymous()) {
       return null;
@@ -309,13 +416,11 @@ actor {
       Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
     };
 
-    // Verify caller owns this profile
     let callerPrincipalText = caller.toText();
     if (profile.principalId != callerPrincipalText) {
       Runtime.trap("Unauthorized: Can only save your own profile");
     };
 
-    // Validate role
     if (not isValidRole(profile.role)) {
       Runtime.trap("Invalid role");
     };
@@ -334,13 +439,11 @@ actor {
     switch (targetProfile) {
       case (null) { null };
       case (?profile) {
-        // Check if caller is viewing their own profile
         let callerPrincipalText = caller.toText();
         if (profile.principalId == callerPrincipalText) {
           return ?profile;
         };
 
-        // Check if caller is ADMIN or SUPERADMIN
         let callerProfile = userProfilesByPrincipal.get(caller);
         switch (callerProfile) {
           case (?cp) {
@@ -356,12 +459,10 @@ actor {
     };
   };
 
-  // Helper to get caller's profile (internal use)
   private func getCallerProfile(caller : Principal) : ?UserProfile.UserProfile {
     userProfilesByPrincipal.get(caller);
   };
 
-  // ID generation functions
   private func generateClientId() : Text {
     clientCounter += 1;
     let paddedNumber = clientCounter.toText();
@@ -388,13 +489,36 @@ actor {
     "PA-" # zeros # paddedNumber;
   };
 
-  // Registration functions
+  private func generateLayanankuId() : Text {
+    layanankuCounter += 1;
+    let paddedNumber = layanankuCounter.toText();
+    let padding = paddedNumber.size();
+    var zeros = "";
+    var i = padding;
+    while (i < 6) {
+      zeros := zeros # "0";
+      i += 1;
+    };
+    "LY-" # zeros # paddedNumber;
+  };
+
+  private func generateTaskId() : Text {
+    taskCounter += 1;
+    let paddedNumber = taskCounter.toText();
+    var zeros = "";
+    var i = paddedNumber.size();
+    while (i < 6) {
+      zeros := zeros # "0";
+      i += 1;
+    };
+    "TS-" # zeros # paddedNumber;
+  };
+
   public shared ({ caller }) func registerClient(name : Text, email : Text, whatsapp : Text, company : Text) : async Text {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot register");
     };
 
-    // Check if caller already has a profile
     switch (getCallerProfile(caller)) {
       case (?_) {
         Runtime.trap("User already has a profile");
@@ -431,7 +555,6 @@ actor {
       Runtime.trap("Unauthorized: Anonymous users cannot register");
     };
 
-    // Check if caller already has a profile
     switch (getCallerProfile(caller)) {
       case (?_) {
         Runtime.trap("User already has a profile");
@@ -469,7 +592,6 @@ actor {
       Runtime.trap("Unauthorized: Anonymous users cannot register");
     };
 
-    // Check if caller already has a profile
     switch (getCallerProfile(caller)) {
       case (?_) {
         Runtime.trap("User already has a profile");
@@ -477,7 +599,6 @@ actor {
       case (null) {};
     };
 
-    // Validate and normalize role
     let normalizedRole = normalizeRole(role);
     if (not isValidInternalRole(normalizedRole)) {
       Runtime.trap("Invalid internal role");
@@ -515,7 +636,6 @@ actor {
       Runtime.trap("Superadmin already claimed");
     };
 
-    // Check if caller already has a profile
     switch (getCallerProfile(caller)) {
       case (?_) {
         Runtime.trap("User already has a profile");
@@ -547,7 +667,6 @@ actor {
     userId;
   };
 
-  // Services module
   public shared ({ caller }) func createService(service : Service.Service) : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot create services");
@@ -569,9 +688,6 @@ actor {
   };
 
   public query ({ caller }) func getServiceById(serviceId : Text) : async ?Service.Service {
-    if (caller.isAnonymous()) {
-      return services.get(serviceId);
-    };
     services.get(serviceId);
   };
 
@@ -579,8 +695,7 @@ actor {
     services.values().toArray();
   };
 
-  // Tasks module
-  public shared ({ caller }) func createTask(task : Task.Task) : async () {
+  public shared ({ caller }) func createTaskLegacy(task : Task.Task) : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot create tasks");
     };
@@ -598,16 +713,14 @@ actor {
       };
     };
 
-    // Validate that the referenced service exists and is ACTIVE
     switch (services.get(task.serviceReference)) {
       case (null) {
         Runtime.trap("Service not found: Cannot create task for non-existent service");
       };
       case (?service) {
         switch (service.status) {
-          case (#active) {
-            // Service is active, proceed
-          };
+          case (#active) {};
+          case (_) {};
         };
         if (not service.available) {
           Runtime.trap("Service not available: Cannot create task for unavailable service");
@@ -618,7 +731,7 @@ actor {
     tasks.add(task.id, task);
   };
 
-  public query ({ caller }) func getTaskById(taskId : Text) : async ?Task.Task {
+  public query ({ caller }) func getTaskLegacy(taskId : Text) : async ?Task.Task {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot view tasks");
     };
@@ -629,19 +742,16 @@ actor {
         Runtime.trap("Unauthorized: User profile not found");
       };
       case (?profile) {
-        let task = tasks.get(taskId);
-        switch (task) {
+        let getVal = tasks.get(taskId);
+        switch (getVal) {
           case (null) { return null };
           case (?t) {
-            // Admin can view all tasks
             if (isAdminOrHigher(profile.role)) {
               return ?t;
             };
-            // Client can view their own tasks
             if (normalizeRole(profile.role) == "CLIENT" and t.clientReferenceId == profile.id) {
               return ?t;
             };
-            // Partner can view tasks they are assigned to
             if (normalizeRole(profile.role) == "PARTNER") {
               if (t.partnerTeamLeader == profile.id) {
                 return ?t;
@@ -659,7 +769,7 @@ actor {
     };
   };
 
-  public query ({ caller }) func getAllTasks() : async [Task.Task] {
+  public query ({ caller }) func getAllTasksLegacy() : async [Task.Task] {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot view tasks");
     };
@@ -670,19 +780,15 @@ actor {
         Runtime.trap("Unauthorized: User profile not found");
       };
       case (?profile) {
-        // Admin can view all tasks
         if (isAdminOrHigher(profile.role)) {
           return tasks.values().toArray();
         };
 
-        // Filter tasks based on role
         let allTasks = tasks.values().toArray();
         let filteredTasks = allTasks.filter(func(task) {
-          // Client can view their own tasks
           if (normalizeRole(profile.role) == "CLIENT" and task.clientReferenceId == profile.id) {
             return true;
           };
-          // Partner can view tasks they are assigned to
           if (normalizeRole(profile.role) == "PARTNER") {
             if (task.partnerTeamLeader == profile.id) {
               return true;
@@ -700,7 +806,6 @@ actor {
     };
   };
 
-  // Financial Partner Data
   public shared ({ caller }) func createFinancialPartnerData(data : FinancialPartnerData.FinancialPartnerData) : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot create wallets");
@@ -736,11 +841,9 @@ actor {
         switch (wallet) {
           case (null) { return null };
           case (?w) {
-            // Admin can view all wallets
             if (isAdminOrHigher(profile.role)) {
               return ?w;
             };
-            // Partner can only view their own wallet
             if (normalizeRole(profile.role) == "PARTNER" and w.partnerId == profile.id) {
               return ?w;
             };
@@ -785,14 +888,12 @@ actor {
           Runtime.trap("Unauthorized: Only PARTNER users can view their wallet");
         };
 
-        // Find wallet by partnerId
         for ((id, wallet) in partnerWallets.entries()) {
           if (wallet.partnerId == profile.id) {
             return wallet;
           };
         };
 
-        // Return zero-safe default wallet if not found
         {
           id = "";
           partnerId = profile.id;
@@ -858,6 +959,708 @@ actor {
           totalPayoutAmount;
         };
       };
+    };
+  };
+
+  public query ({ caller }) func hasActiveLayananku(clientId : Text) : async Bool {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot check Layananku status");
+    };
+
+    let callerProfile = getCallerProfile(caller);
+    switch (callerProfile) {
+      case (null) {
+        Runtime.trap("Unauthorized: User profile not found");
+      };
+      case (?profile) {
+        if (not isAdminOrHigher(profile.role) and profile.id != clientId) {
+          Runtime.trap("Unauthorized: Can only check your own Layananku status or must be ADMIN/SUPERADMIN");
+        };
+
+        let now = auditLogCounter;
+        let layanankuArray = layanankuByClientId.get(clientId);
+        switch (layanankuArray) {
+          case (null) { false };
+          case (?layanankuList) {
+            for (layananku in layanankuList.vals()) {
+              let computedStatus = computeLayananStatus(now, layananku.startAt, layananku.endAt);
+              if (computedStatus == #active) { return true };
+            };
+            false;
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func myHasActiveLayananku() : async Bool {
+    if (caller.isAnonymous()) {
+      return false;
+    };
+
+    switch (getCallerProfile(caller)) {
+      case (null) {
+        false;
+      };
+      case (?profile) {
+        let now = auditLogCounter;
+        if (normalizeRole(profile.role) == "CLIENT") {
+          let layanankuArray = layanankuByClientId.get(profile.id);
+          switch (layanankuArray) {
+            case (null) { return false };
+            case (?layanankuList) {
+              for (layananku in layanankuList.vals()) {
+                let computedStatus = computeLayananStatus(now, layananku.startAt, layananku.endAt);
+                if (computedStatus == #active) { return true };
+              };
+              return false;
+            };
+          };
+        } else {
+          for ((id, layanankuRecord) in layanankuById.entries()) {
+            let computedStatus = computeLayananStatus(now, layanankuRecord.startAt, layanankuRecord.endAt);
+            if (computedStatus == #active and principalHasAccess(caller.toText(), layanankuRecord)) {
+              return true;
+            };
+          };
+          false;
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getMyLayananku() : async [LayanankuRecord.LayanankuPublic] {
+    if (caller.isAnonymous()) {
+      return [];
+    };
+
+    switch (getCallerProfile(caller)) {
+      case (null) {
+        [];
+      };
+      case (?profile) {
+        var filteredLayananku : [LayanankuRecord.LayanankuRecord] = [];
+
+        if (isAdminOrHigher(profile.role) or isSuperadmin(profile.role)) {
+          filteredLayananku := layanankuById.values().toArray();
+        } else {
+          for ((id, layanankuRecord) in layanankuById.entries()) {
+            if (principalHasAccess(caller.toText(), layanankuRecord)) {
+              filteredLayananku := filteredLayananku.concat([layanankuRecord]);
+            };
+          };
+        };
+
+        filteredLayananku.map(toPublic);
+      };
+    };
+  };
+
+  public query ({ caller }) func getLayanankuInternal(idLayanan : Text) : async ?LayanankuRecord.LayanankuRecord {
+    let callerProfile = getCallerProfile(caller);
+    switch (callerProfile) {
+      case (null) {
+        Runtime.trap("Unauthorized");
+      };
+      case (?profile) {
+        if (not isAdminOrHigher(profile.role)) {
+          Runtime.trap("Unauthorized");
+        };
+        layanankuById.get(idLayanan);
+      };
+    };
+  };
+
+  public shared ({ caller }) func createLayanankuForClient(
+    clientId : Text,
+    kind : LayanankuKind.LayananKind,
+    startAt : Nat,
+    endAt : Nat,
+    sharePrincipals : [Text],
+    hargaPerLayanan : Nat
+  ) : async Text {
+    let callerProfile = getCallerProfile(caller);
+    switch (callerProfile) {
+      case (null) {
+        Runtime.trap("Unauthorized");
+      };
+      case (?profile) {
+        if (not isAdminOrHigher(profile.role)) {
+          Runtime.trap("Unauthorized");
+        };
+
+        if (endAt <= startAt) {
+          Runtime.trap("INVALID_PERIOD");
+        };
+
+        switch (userProfilesById.get(clientId)) {
+          case (null) {
+            Runtime.trap("CLIENT_NOT_FOUND");
+          };
+          case (?clientProfile) {
+            if (normalizeRole(clientProfile.role) != "CLIENT") {
+              Runtime.trap("TARGET_NOT_CLIENT");
+            };
+
+            let finalSharePrincipals = [clientProfile.principalId].concat(sharePrincipals);
+
+            if (finalSharePrincipals.size() > 6) {
+              Runtime.trap("SHARE_LIMIT_EXCEEDED_MAX_6");
+            };
+
+            let id = generateLayanankuId();
+            let now = auditLogCounter;
+
+            let layananku : LayanankuRecord.LayanankuRecord = {
+              id;
+              kind;
+              startAt;
+              endAt;
+              status = computeLayananStatus(now, startAt, endAt);
+              sharePrincipals = finalSharePrincipals;
+              hargaPerLayanan;
+              clientId;
+              createdAt = now;
+              updatedAt = now;
+              asistenmuPrincipalId = null;
+              asistenmuNameSnapshot = null;
+            };
+
+            layanankuById.add(id, layananku);
+
+            let currentClientLayananku = switch (layanankuByClientId.get(clientId)) {
+              case (null) { [] };
+              case (?existing) { existing };
+            };
+            layanankuByClientId.add(clientId, currentClientLayananku.concat([layananku]));
+
+            recordAuditLog(caller, #updateCodeData, "Create Layananku " # id);
+
+            return id;
+          };
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateLayanankuShare(idLayanan : Text, newSharePrincipals : [Text]) : async Bool {
+    let callerProfile = getCallerProfile(caller);
+    switch (callerProfile) {
+      case (null) {
+        Runtime.trap("Unauthorized");
+      };
+      case (?profile) {
+        if (not isAdminOrHigher(profile.role)) {
+          Runtime.trap("Unauthorized");
+        };
+
+        switch (layanankuById.get(idLayanan)) {
+          case (null) { false };
+          case (?currentLayananku) {
+            let clientProfile = switch (userProfilesById.get(currentLayananku.clientId)) {
+              case (null) { Runtime.trap("Client not found for Layananku") };
+              case (?cp) { cp };
+            };
+
+            let clientPrincipal = clientProfile.principalId;
+
+            let hasPrincipal = newSharePrincipals.any(func(p) { p == clientPrincipal });
+            let finalShare = if (hasPrincipal) {
+              newSharePrincipals;
+            } else {
+              [clientPrincipal].concat(newSharePrincipals);
+            };
+
+            if (finalShare.size() > 6) {
+              Runtime.trap("SHARE_LIMIT_EXCEEDED_MAX_6");
+            };
+
+            let now = auditLogCounter;
+
+            let updatedLayananku : LayanankuRecord.LayanankuRecord = {
+              currentLayananku with
+              sharePrincipals = finalShare;
+              status = computeLayananStatus(now, currentLayananku.startAt, currentLayananku.endAt);
+              updatedAt = now;
+            };
+
+            layanankuById.add(idLayanan, updatedLayananku);
+
+            let currentClientLayananku = switch (layanankuByClientId.get(currentLayananku.clientId)) {
+              case (null) { [] };
+              case (?existing) { existing };
+            };
+            let updatedClientLayananku = currentClientLayananku.map(
+              func(l : LayanankuRecord.LayanankuRecord) : LayanankuRecord.LayanankuRecord {
+                if (l.id == idLayanan) { updatedLayananku } else { l };
+              }
+            );
+            layanankuByClientId.add(currentLayananku.clientId, updatedClientLayananku);
+
+            recordAuditLog(caller, #updateCodeData, "Update share Layananku " # idLayanan);
+
+            true;
+          };
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func deactivateLayananku(idLayanan : Text) : async Bool {
+    let callerProfile = getCallerProfile(caller);
+    switch (callerProfile) {
+      case (null) {
+        Runtime.trap("Unauthorized");
+      };
+      case (?profile) {
+        if (not isAdminOrHigher(profile.role)) {
+          Runtime.trap("Unauthorized");
+        };
+
+        switch (layanankuById.get(idLayanan)) {
+          case (null) { false };
+          case (?currentLayananku) {
+            let now = auditLogCounter;
+
+            let deactivatedLayananku : LayanankuRecord.LayanankuRecord = {
+              id = currentLayananku.id;
+              kind = currentLayananku.kind;
+              startAt = currentLayananku.startAt;
+              endAt = currentLayananku.endAt;
+              status = #inactive;
+              sharePrincipals = currentLayananku.sharePrincipals;
+              hargaPerLayanan = currentLayananku.hargaPerLayanan;
+              clientId = currentLayananku.clientId;
+              createdAt = currentLayananku.createdAt;
+              updatedAt = now;
+              asistenmuPrincipalId = currentLayananku.asistenmuPrincipalId;
+              asistenmuNameSnapshot = currentLayananku.asistenmuNameSnapshot;
+            };
+
+            layanankuById.add(idLayanan, deactivatedLayananku);
+
+            let currentClientLayananku = switch (layanankuByClientId.get(currentLayananku.clientId)) {
+              case (null) { [] };
+              case (?existing) { existing };
+            };
+            let updatedClientLayananku = currentClientLayananku.map(
+              func(l : LayanankuRecord.LayanankuRecord) : LayanankuRecord.LayanankuRecord {
+                if (l.id == idLayanan) { deactivatedLayananku } else { l };
+              }
+            );
+            layanankuByClientId.add(currentLayananku.clientId, updatedClientLayananku);
+
+            recordAuditLog(caller, #updateCodeData, "Deactivate Layananku " # idLayanan);
+
+            true;
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getLayanankuForClient(clientId : Text) : async [ExtendedLayanankuRecord.ExtendedLayanankuRecord] {
+    let maybeProfile = getCallerProfile(caller);
+    switch (maybeProfile) {
+      case (null) { Runtime.trap("Unauthorized") };
+      case (?userProfile) {
+        if (userProfile.id != clientId and not isAdminOrHigher(userProfile.role)) {
+          Runtime.trap("Unauthorized");
+        };
+
+        let layanankuArray = switch (layanankuByClientId.get(clientId)) {
+          case (null) { return [] };
+          case (?array) { array };
+        };
+
+        return layanankuArray.map(
+          func(l : LayanankuRecord.LayanankuRecord) : ExtendedLayanankuRecord.ExtendedLayanankuRecord {
+            {
+              id = l.id;
+              kind = l.kind;
+              startAt = l.startAt;
+              endAt = l.endAt;
+              status = l.status;
+              sharePrincipals = l.sharePrincipals;
+              hargaPerLayanan = l.hargaPerLayanan;
+              clientId = l.clientId;
+              createdAt = l.createdAt;
+              updatedAt = l.updatedAt;
+              asistenmuPrincipalId = l.asistenmuPrincipalId;
+              asistenmuName = resolveAsistenmuName(l.asistenmuPrincipalId);
+            };
+          }
+        );
+      };
+    };
+  };
+
+  private func resolveAsistenmuName(asistenmuPrincipalId : ?Text) : ?Text {
+    switch (asistenmuPrincipalId) {
+      case (null) {
+        null;
+      };
+      case (?pid) {
+        for ((p, up) in userProfilesByPrincipal.entries()) {
+          if (up.principalId == pid and up.role == "ASISTENMU") {
+            return switch (up.internalData) {
+              case (null) { null };
+              case (?internalData) { ?internalData.name };
+            };
+          };
+        };
+        null;
+      };
+    };
+  };
+
+  public shared ({ caller }) func assignAsistenmuToLayananku(layanankuId : Text, asistenmuPrincipalId : Text) : async Bool {
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { Runtime.trap("Unauthorized") };
+      case (?up) { up };
+    };
+
+    if (not isAdminOrHigher(callerProfile.role)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let layananku = switch (layanankuById.get(layanankuId)) {
+      case (null) { Runtime.trap("Layananku not found") };
+      case (?l) { l };
+    };
+
+    let asistenmuProfile = switch (userProfilesByPrincipal.entries().find(func((p, up)) { up.principalId == asistenmuPrincipalId and up.role == "ASISTENMU" })) {
+      case (null) { Runtime.trap("Invalid asistenmuPrincipalId") };
+      case (?(_, asistenmu)) { asistenmu };
+    };
+
+    let updatedLayananku : LayanankuRecord.LayanankuRecord = {
+      layananku with
+      asistenmuPrincipalId = ?asistenmuPrincipalId;
+      asistenmuNameSnapshot = switch (asistenmuProfile.internalData) {
+        case (null) { null };
+        case (?internalData) { ?internalData.name };
+      };
+    };
+
+    layanankuById.add(layanankuId, updatedLayananku);
+
+    let currentClientLayananku = switch (layanankuByClientId.get(layananku.clientId)) {
+      case (null) { [] };
+      case (?existing) { existing };
+    };
+    let updatedClientLayananku = currentClientLayananku.map(
+      func(l : LayanankuRecord.LayanankuRecord) : LayanankuRecord.LayanankuRecord {
+        if (l.id == layanankuId) { updatedLayananku } else { l };
+      }
+    );
+    layanankuByClientId.add(layananku.clientId, updatedClientLayananku);
+
+    recordAuditLog(caller, #updateCodeData, "Assign Asistenmu to Layananku " # layanankuId);
+
+    true;
+  };
+
+  public query ({ caller }) func getAsistenmuCandidates() : async [AsistenmuCandidateDTO.AsistenmuCandidateDTO] {
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { Runtime.trap("Unauthorized") };
+      case (?profile) { profile };
+    };
+
+    if (not isAdminOrHigher(callerProfile.role)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let users = userProfilesByPrincipal.values().toArray();
+    let asistenmuCandidates = users.filter(
+      func(profile) {
+        profile.role == "ASISTENMU";
+      }
+    );
+
+    asistenmuCandidates.map(
+      func(profile) {
+        let name = switch (profile.internalData) {
+          case (null) { "" };
+          case (?data) { data.name };
+        };
+
+        {
+          principalId = profile.principalId;
+          name;
+          role = profile.role;
+          status = profile.status;
+        };
+      }
+    );
+  };
+
+  private func principalHasAccess(principalText : Text, layanankuRecord : LayanankuRecord.LayanankuRecord) : Bool {
+    layanankuRecord.sharePrincipals.any(func(p : Text) : Bool { p == principalText });
+  };
+
+  private func computeLayananStatus(now : Nat, startAt : Nat, endAt : Nat) : LayanankuStatus.LayananStatus {
+    if (now < startAt) { #inactive }
+    else if (now <= endAt) { #active }
+    else { #expired };
+  };
+
+  private func toPublic(layananku : LayanankuRecord.LayanankuRecord) : LayanankuRecord.LayanankuPublic {
+    {
+      id = layananku.id;
+      kind = layananku.kind;
+      startAt = layananku.startAt;
+      endAt = layananku.endAt;
+      status = layananku.status;
+      sharePrincipals = layananku.sharePrincipals;
+      createdAt = layananku.createdAt;
+      updatedAt = layananku.updatedAt;
+    };
+  };
+
+  private func recordAuditLog(caller : Principal, actionType : AuditLogEntry.AuditActionType, metadata : Text) : () {
+    auditLogCounter += 1;
+    let entry : AuditLogEntry.AuditLogEntry = {
+      timestamp = auditLogCounter;
+      principalId = caller.toText();
+      actionType;
+      metadata;
+    };
+    auditLogs.add(auditLogCounter, entry);
+  };
+
+  public shared ({ caller }) func createTask(
+    title : Text,
+    description : Text,
+    clientDeadline : ?Nat,
+    requestType : MinimalTask.RequestType
+  ) : async Text {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) {
+        Runtime.trap("Unauthorized");
+      };
+      case (?p) { p };
+    };
+
+    if (normalizeRole(callerProfile.role) != "CLIENT") {
+      Runtime.trap("Unauthorized: Only CLIENT can create tasks");
+    };
+
+    if (not (await myHasActiveLayananku())) {
+      Runtime.trap("No active Layananku");
+    };
+
+    let taskId = generateTaskId();
+    let now = Int.abs(Time.now());
+
+    let task : MinimalTask.TaskRecord = {
+      taskId;
+      clientId = callerProfile.id;
+      createdByPrincipal = caller;
+      title;
+      description;
+      clientDeadline;
+      internalDeadline = null;
+      assignedPartnerId = null;
+      assignedAsistenmuName = "";
+      statusInternal = #REQUESTED;
+      createdAt = now;
+      updatedAt = now;
+      requestType = requestType;
+    };
+
+    tasksById.add(taskId, task);
+
+    let currentClientTasks = switch (taskIdsByClientId.get(callerProfile.id)) {
+      case (null) { [] };
+      case (?existing) { existing };
+    };
+    taskIdsByClientId.add(callerProfile.id, currentClientTasks.concat([taskId]));
+
+    taskId;
+  };
+
+  public query ({ caller }) func getMyClientTasks() : async [MinimalTask.TaskRecord] {
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { return [] };
+      case (?p) { p };
+    };
+
+    if (normalizeRole(callerProfile.role) != "CLIENT") {
+      return [];
+    };
+
+    let taskIds = switch (taskIdsByClientId.get(callerProfile.id)) {
+      case (null) { return [] };
+      case (?ids) { ids };
+    };
+
+    let validTasks = taskIds.filter(
+      func(taskId) {
+        switch (tasksById.get(taskId)) {
+          case (null) { false };
+          case (?_) { true };
+        };
+      }
+    );
+
+    validTasks.map(
+      func(taskId) {
+        switch (tasksById.get(taskId)) {
+          case (null) { Runtime.trap("should never happen") };
+          case (?task) { task };
+        };
+      }
+    );
+  };
+
+  public query ({ caller }) func getMyPartnerTasks() : async [MinimalTask.TaskRecord] {
+    if (caller.isAnonymous()) { return [] };
+
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { return [] };
+      case (?p) { p };
+    };
+
+    if (normalizeRole(callerProfile.role) != "PARTNER") {
+      return [];
+    };
+
+    let taskIds = switch (taskIdsByPartnerId.get(callerProfile.id)) {
+      case (null) { return [] };
+      case (?ids) { ids };
+    };
+
+    let validTasks = taskIds.filter(
+      func(taskId) {
+        switch (tasksById.get(taskId)) {
+          case (null) { false };
+          case (?_) { true };
+        };
+      }
+    );
+
+    validTasks.map(
+      func(taskId) {
+        switch (tasksById.get(taskId)) {
+          case (null) { Runtime.trap("should never happen") };
+          case (?task) { task };
+        };
+      }
+    );
+  };
+
+  public shared ({ caller }) func assignTaskToPartner(
+    taskId : Text,
+    partnerId : Text,
+    internalDeadline : ?Nat,
+    asistenmuName : Text
+  ) : async Bool {
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { Runtime.trap("Unauthorized") };
+      case (?p) { p };
+    };
+
+    let role = normalizeRole(callerProfile.role);
+    if (role != "ASISTENMU" and not isAdminOrHigher(role)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let partnerProfile = switch (userProfilesById.get(partnerId)) {
+      case (null) { Runtime.trap("Partner not found") };
+      case (?p) { p };
+    };
+
+    if (normalizeRole(partnerProfile.role) != "PARTNER") {
+      Runtime.trap("Target is not a partner");
+    };
+
+    let task = switch (tasksById.get(taskId)) {
+      case (null) { return false };
+      case (?t) { t };
+    };
+
+    let updatedTask : MinimalTask.TaskRecord = {
+      task with
+      assignedPartnerId = ?partnerId;
+      internalDeadline;
+      assignedAsistenmuName = asistenmuName;
+      statusInternal = #IN_PROGRESS;
+      updatedAt = Int.abs(Time.now());
+    };
+
+    tasksById.add(taskId, updatedTask);
+
+    let currentPartnerTasks = switch (taskIdsByPartnerId.get(partnerId)) {
+      case (null) { [] };
+      case (?existing) { existing };
+    };
+    taskIdsByPartnerId.add(partnerId, currentPartnerTasks.concat([taskId]));
+
+    true;
+  };
+
+  public shared ({ caller }) func setTaskStatus(
+    taskId : Text,
+    statusInternal : MinimalTask.TaskStatusInternal
+  ) : async Bool {
+    let callerProfile = switch (getCallerProfile(caller)) {
+      case (null) { Runtime.trap("Unauthorized") };
+      case (?p) { p };
+    };
+
+    let role = normalizeRole(callerProfile.role);
+    if (role != "ASISTENMU" and not isAdminOrHigher(role)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let currentTask = switch (tasksById.get(taskId)) {
+      case (null) { return false };
+      case (?t) { t };
+    };
+
+    let updatedTask : MinimalTask.TaskRecord = {
+      currentTask with
+      statusInternal;
+      updatedAt = Int.abs(Time.now());
+    };
+    tasksById.add(taskId, updatedTask);
+    true;
+  };
+
+  public query ({ caller }) func getTaskById(taskId : Text) : async ?MinimalTask.TaskRecord {
+    if (caller.isAnonymous()) {
+      return null;
+    };
+
+    switch (getCallerProfile(caller), tasksById.get(taskId)) {
+      case (null, null) { null };
+      case (null, ?_) { Runtime.trap("Unauthorized") };
+      case (?_, null) { return null };
+      case (?callerProfile, ?task) {
+        let role = normalizeRole(callerProfile.role);
+        if (
+          isAdminOrHigher(role) or
+          role == "ASISTENMU" or
+          (role == "CLIENT" and task.clientId == callerProfile.id) or
+          (role == "PARTNER" and partnerMatch(task.assignedPartnerId, callerProfile.id))
+        ) {
+          ?task;
+        } else {
+          null;
+        };
+      };
+    };
+  };
+
+  func partnerMatch(assignedPartnerId : ?Text, callerId : Text) : Bool {
+    switch (assignedPartnerId) {
+      case (null) { false };
+      case (?id) { id == callerId };
     };
   };
 };

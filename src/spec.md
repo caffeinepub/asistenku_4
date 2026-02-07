@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Add backend-only core modules for Services, Tasks, Partner Wallet, and Financial Summary in `backend/main.mo`, with strict role-based authorization and empty-safe reads, without changing existing User/Role/ID logic.
+**Goal:** Add a Client “Service Request” flow to submit and view service request tasks with a selectable request priority (requestType), supported by a minimal backend TaskRecord update.
 
 **Planned changes:**
-- Add a Services module: `Service` data model, `servicesById` / `servicesByClientId` storage, and endpoints for creating/updating services, client service reads, caller active-service check, and SUPERADMIN-only service stats (all empty-safe).
-- Add a Tasks module: `Task` data model, `tasksById` / `tasksByClientId` / `tasksByPartnerId` storage, and endpoints for client task creation (requires ACTIVE service), staff assignment/status updates, and client/partner “my tasks” reads (all empty-safe; no automatic transitions).
-- Add a Partner Wallet module: `PartnerWallet` model, `walletByPartnerId` storage, minimal withdrawal-request model + storage, and endpoints for PARTNER wallet read (zero-safe), PARTNER withdraw request, and ADMIN/SUPERADMIN approval (no automatic payout actions).
-- Add a SUPERADMIN-only Financial Summary endpoint that aggregates GMV from services and partner payouts from wallets with fully empty-safe 0/empty-map outputs and Nat-safe gross margin arithmetic.
+- Backend: extend Minimal Task record to include `requestType : Text` with allowed values `NORMAL`, `PRIORITY`, `URGENT`, and ensure older stored tasks safely default to `NORMAL` when read (or migrate on upgrade if required).
+- Backend: update the client task creation endpoint to accept/persist `requestType`, validate it (reject invalid values with an English technical error), and always create tasks in `REQUESTED` status without mutating any service/layanan counters.
+- Frontend: add React Query hooks for creating a client request and listing the caller’s submitted requests, following existing actor readiness/access-guard patterns and English technical error handling.
+- Frontend: add a “Service Request” section/tab inside `/client` with a request form (title, description, requestType radios/segmented control with helper text, optional deadline) plus a list of submitted requests showing requestType badges and status `REQUESTED`, with no pricing fields.
+- Frontend: on submit success, do not redirect; show the exact English success message and refresh the list; on error, show a non-crashing English error state/toast.
+- Frontend: integrate new user-facing copy via the existing i18n system (EN/ID keys), while keeping technical/system/backend error strings in English and out of translation-based logic.
 
-**User-visible outcome:** No UI changes; new canister methods become available to manage services, tasks, partner wallets/withdrawals, and to fetch SUPERADMIN financial summaries with safe behavior on empty/missing data.
+**User-visible outcome:** Clients can submit a service request (choosing Normal/Priority/Urgent and optionally a deadline) and see a list of their submitted requests with requestType badges and `REQUESTED` status, staying on the same `/client` page after submission.

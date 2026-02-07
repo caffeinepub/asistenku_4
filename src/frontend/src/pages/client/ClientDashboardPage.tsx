@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BrandLogo from '@/components/BrandLogo';
 import CopyRow from '@/components/CopyRow';
-import LockedPanel from '@/components/LockedPanel';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
+import ClientLayanankuTab from '@/components/client/ClientLayanankuTab';
+import ClientDelegasiLockState from '@/components/client/ClientDelegasiLockState';
+import ClientServiceRequestTab from '@/components/client/ClientServiceRequestTab';
 import { useGetCallerUser } from '@/hooks/useQueries';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
@@ -37,10 +39,11 @@ function ClientDashboardContent() {
                     </div>
 
                     <Tabs defaultValue="ringkasan" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-5">
                             <TabsTrigger value="ringkasan">{t('tab_summary', locale)}</TabsTrigger>
                             <TabsTrigger value="profil">{t('tab_profile', locale)}</TabsTrigger>
                             <TabsTrigger value="layananku">{t('tab_services', locale)}</TabsTrigger>
+                            <TabsTrigger value="permintaan">{t('tab_service_request', locale)}</TabsTrigger>
                             <TabsTrigger value="delegasi">{t('tab_delegation', locale)}</TabsTrigger>
                         </TabsList>
 
@@ -74,25 +77,27 @@ function ClientDashboardContent() {
                         </TabsContent>
 
                         <TabsContent value="layananku" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{t('services_my_title', locale)}</CardTitle>
-                                    <CardDescription>{t('services_my_desc', locale)}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-muted-foreground">{t('services_none', locale)}</p>
-                                </CardContent>
-                            </Card>
+                            <ClientLayanankuTab />
+                        </TabsContent>
+
+                        <TabsContent value="permintaan" className="space-y-4">
+                            <ClientServiceRequestTab />
                         </TabsContent>
 
                         <TabsContent value="delegasi" className="space-y-4">
-                            <LockedPanel
-                                title={t('delegation_title', locale)}
-                                description={t('delegation_locked_desc', locale)}
-                            />
-                            <Button variant="outline" className="w-full">
-                                {t('contact_admin', locale)}
-                            </Button>
+                            <ClientDelegasiLockState>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>{t('delegation_title', locale)}</CardTitle>
+                                        <CardDescription>Create and manage your tasks</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Button className="w-full">
+                                            Create New Task
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </ClientDelegasiLockState>
                         </TabsContent>
                     </Tabs>
                 </div>

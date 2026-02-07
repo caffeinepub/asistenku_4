@@ -1,4 +1,105 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-add-frontend-react-query-hooks-mutations-for-the-client-request-flow-create-a-service-request-task-and-list-the-caller-s-submitted-requests-using-the-existing-actor-readiness-patterns-and-error-handling-style",
+      "featureTitle": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+      "files": [
+        "frontend/src/hooks/useClientServiceRequests.ts",
+        "frontend/src/pages/client/ClientDashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-112"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-client-dashboard-service-request-ui-inside-the-existing-client-workspace-a-form-to-submit-a-request-and-a-list-view-showing-the-client-s-submitted-requests-with-requesttype-badges-and-default-status-requested",
+      "featureTitle": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+      "files": [
+        "frontend/src/components/client/ClientServiceRequestTab.tsx",
+        "frontend/src/pages/client/ClientDashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-113"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-successful-client-request-submission-keep-the-user-on-the-same-page-no-auto-redirect-and-show-an-english-success-message-on-failure-show-a-non-crashing-error-state-toast-while-keeping-the-ui-visible",
+      "featureTitle": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+      "files": [
+        "frontend/src/components/client/ClientServiceRequestTab.tsx",
+        "frontend/src/hooks/useClientServiceRequests.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-114"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-requesttype-helper-texts-are-displayed-for-each-option-in-the-client-form-in-english-including-a-lightly-highlighted-note-for-urgent",
+      "featureTitle": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
+      "files": [
+        "frontend/src/components/client/ClientServiceRequestTab.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-115"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-integrate-the-new-client-request-ui-copy-into-the-existing-frontend-i18n-system-by-adding-new-translation-keys-en-id-but-keep-all-technical-system-backend-error-strings-in-english-and-never-use-translated-strings-in-logic-branching",
+      "featureTitle": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
+      "files": [
+        "frontend/src/components/client/ClientServiceRequestTab.tsx",
+        "frontend/src/lib/i18n.ts",
+        "frontend/src/pages/client/ClientDashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-116"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

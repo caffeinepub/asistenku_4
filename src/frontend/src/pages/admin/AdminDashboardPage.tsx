@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import DashboardSidebar from '@/components/DashboardSidebar';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
+import ManajemenLayananView from '@/components/layanan/ManajemenLayananView';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
 
@@ -11,9 +12,11 @@ function AdminDashboardContent() {
     const [activeMenu, setActiveMenu] = useState('ringkasan');
 
     const MENU_ITEMS = [
-        { label: t('menu_summary', locale), value: 'ringkasan' },
-        { label: t('menu_users', locale), value: 'users' },
-        { label: t('menu_internal_access', locale), value: 'internal-access' }
+        { label: 'Ringkasan', value: 'ringkasan' },
+        { label: 'Manajemen User', value: 'users' },
+        { label: 'Manajemen Layanan', value: 'layanan' },
+        { label: 'Manajemen Task', value: 'task' },
+        { label: 'Pengaturan', value: 'pengaturan' }
     ];
 
     return (
@@ -50,14 +53,28 @@ function AdminDashboardContent() {
                         </Card>
                     )}
 
-                    {activeMenu === 'internal-access' && (
+                    {activeMenu === 'layanan' && <ManajemenLayananView />}
+
+                    {activeMenu === 'task' && (
                         <Card>
                             <CardHeader>
-                                <CardTitle>{t('admin_internal_access_title', locale)}</CardTitle>
-                                <CardDescription>{t('admin_internal_access_desc', locale)}</CardDescription>
+                                <CardTitle>Manajemen Task</CardTitle>
+                                <CardDescription>Task assignment and tracking</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-muted-foreground">Internal access code management coming soon.</p>
+                                <p className="text-muted-foreground">Task management features coming soon.</p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {activeMenu === 'pengaturan' && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Pengaturan</CardTitle>
+                                <CardDescription>System settings and configuration</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground">Settings coming soon.</p>
                             </CardContent>
                         </Card>
                     )}

@@ -1,101 +1,105 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T06:04:41.337Z",
-  "summary": "The diff does not implement the requested backend-only core modules as specified. Although `backend/main.mo` now contains `module Service` and `module Task`, their data models do not match the required fields/types, and the diff summary provides no evidence of the required storage maps or endpoints for Services, Tasks, Partner Wallet, or Financial Summary. Additionally, there is evidence of unrelated additions (migration wiring, audit log/internal access code modules) and evidence pointing to frontend/routing/theme work despite the backend-only constraint.",
+  "generatedAt": "2026-02-07T15:15:23.632Z",
+  "summary": "Diff adds a new client “Service Request” tab UI and React Query hooks, plus introduces a backend migration module that adds a `requestType` concept. However, several backend requirements are either not evidenced or appear implemented with a different type (variant) than specified (Text), and backend-side validation/compatibility guarantees are not clearly shown in the provided diff summary/truncation.",
   "missing_requirements": [
     {
-      "id": "REQ-67",
-      "requirement": "Define the Service model with the exact required fields/types and add `servicesById` and `servicesByClientId` maps in `backend/main.mo` without changing existing user/role/ID logic.",
-      "reason": "The diff shows a `module Service` but with a completely different `Service` record shape (e.g., `id`, `code`, `title`, many extra fields, and `status` as a variant), not the required `serviceId/clientId/packageName/priceIdr/status(createdAt/updatedAt)` schema. The required storage maps are not evidenced in the truncated diff.",
+      "id": "REQ-109",
+      "requirement": "Backend MinimalTask.TaskRecord must include `requestType : Text` and stored/returned values must always contain one of: \"NORMAL\", \"PRIORITY\", \"URGENT\" (uppercase).",
+      "reason": "The only explicit new `requestType` shown is in `backend/migration.mo`, where it is implemented as a Motoko variant (`RequestType` with `#NORMAL/#PRIORITY/#URGENT`) rather than `Text`. The truncated `backend/main.mo` snippet does not show `MinimalTask.TaskRecord` being updated to include `requestType : Text` or enforcing uppercase Text values on stored/returned records.",
       "evidence": [
-        "backend/main.mo"
+        "backend/migration.mo",
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-68",
-      "requirement": "Implement Services endpoints (`createService`, `setServiceStatus`, `getServicesByClientId`, `hasActiveServiceForCaller`, `getServiceStats`) with the specified role-based authorization and empty-safe behavior.",
-      "reason": "The provided `backend/main.mo` snippet only shows type modules; there is no evidence in the diff summary of the required public actor methods/endpoints or the specified stats aggregation behavior and empty-safe reads.",
+      "id": "REQ-110",
+      "requirement": "Backend `createTask(...)` must accept `requestType : Text` (or equivalent) and reject invalid values (after trimming) with an English trap message like \"INVALID_REQUEST_TYPE\"; created tasks must always start with `statusInternal = #REQUESTED` and must not mutate service counters/statuses.",
+      "reason": "Frontend calls `actor.createTask(title, description, clientDeadline, requestType)` with `requestType` as a `RequestType` enum/variant, but the diff summary does not show the backend `createTask` signature change, any trimming/validation logic, or the explicit trap message requirement. Also no evidence is shown confirming `statusInternal` is always forced to `#REQUESTED` in create.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/hooks/useClientServiceRequests.ts",
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-69",
-      "requirement": "Define the Task model with the exact required fields/types and add `tasksById`, `tasksByClientId`, `tasksByPartnerId` maps in `backend/main.mo` without changing existing user/role/ID logic.",
-      "reason": "The diff shows a `module Task` but with a very different model (many unrelated fields, no `taskId/clientId/partnerId?/statusInternal/createdAt/updatedAt` as specified). The required storage maps are not evidenced in the truncated diff.",
+      "id": "REQ-111",
+      "requirement": "Backward compatibility: pre-existing stored tasks must safely default missing `requestType` to \"NORMAL\" during read and/or via conditional migration; returned tasks from `getMyClientTasks`, `getMyPartnerTasks`, `getTaskById` must include non-empty `requestType`. Migration only if required by stable state layout (conditional migration policy).",
+      "reason": "A migration module is added and applied, and it sets `requestType = #NORMAL` during migration, but the diff summary does not show any read-time defaulting in getters, nor does it demonstrate the migration is conditional (only when required by stable layout). The getter functions themselves are not shown, so it’s not evidenced that they always return a populated `requestType` for older records.",
       "evidence": [
-        "backend/main.mo"
+        "backend/migration.mo",
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-70",
-      "requirement": "Implement Tasks endpoints (`createTask` gated by active service, `assignTask`, `setTaskStatus`, `getMyClientTasks`, `getMyPartnerTasks`) with explicit-only behavior and empty-safe reads/updates.",
-      "reason": "No evidence in the diff summary of these endpoints, the required active-service check with an English user-readable trap message, index maintenance, or empty-safe/no-trap handling for missing map entries/IDs.",
+      "id": "REQ-112",
+      "requirement": "Hooks must follow existing actor readiness / AccessGate guard patterns: do not run protected-page queries before AccessGate verification completes; technical errors shown in English.",
+      "reason": "The query is gated by `enabled: !!actor && !actorFetching`, but the diff summary does not evidence that this specifically aligns with the existing AccessGate verification completion requirement (it depends on what `useActor()` and `actorFetching` mean).",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/hooks/useClientServiceRequests.ts"
       ]
     },
     {
-      "id": "REQ-71",
-      "requirement": "Add Partner Wallet and Withdrawal Request models, storage maps, and endpoints (`getMyWallet`, `requestWithdraw`, `approveWithdraw`) with empty-safe, no-background-action behavior.",
-      "reason": "No evidence in the diff summary of `PartnerWallet`, withdrawal request model/storage (`walletByPartnerId`, `withdrawRequestsById`, etc.), or the required wallet/withdraw endpoints and behaviors.",
+      "id": "REQ-113",
+      "requirement": "Client “Service Request” UI must include required fields (Title, Description, requestType selection with 3 options), optional deadline input, always-visible English info note, and list items showing Title + requestType badge (Normal/Priority/Urgent) + status text \"REQUESTED\"; no pricing fields.",
+      "reason": "A new tab component exists and shows Title/Description fields and requestType state; however, the file is truncated before showing the requestType helper blocks, the always-visible info note, the deadline input UI, and the list rendering that includes explicit status text \"REQUESTED\" and empty state handling. These specific AC items are not fully evidenced in the truncated diff.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)",
+        "frontend/src/pages/client/ClientDashboardPage.tsx (truncated)"
       ]
     },
     {
-      "id": "REQ-72",
-      "requirement": "Implement `getFinancialSummary()` for SUPERADMIN aggregating service GMV and partner payouts with fully empty-safe zero/empty-map outputs and Nat-safe subtraction.",
-      "reason": "No evidence in the diff summary of a `getFinancialSummary` endpoint or any aggregation logic over services/wallets.",
+      "id": "REQ-115",
+      "requirement": "RequestType helper texts in English for NORMAL/PRIORITY/URGENT (with URGENT subtly emphasized).",
+      "reason": "i18n keys for helper texts are added (e.g., `request_type_*_helper`), but the truncated UI file does not show these helper texts actually being rendered, nor any subtle emphasis styling for URGENT.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/lib/i18n.ts (truncated)",
+        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-116",
+      "requirement": "New UI copy must be added to i18n for both EN/ID locales; technical errors remain English and are not translated; no branching on translated strings.",
+      "reason": "The diff shows new translation keys added to the `TranslationKey` union, but the actual `en` and `id` dictionary entries are not visible in the truncated snippet, so it is not evidenced that both locales have values. (The hook does keep error messages in English, which aligns, but the EN/ID addition is not fully evidenced.)",
+      "evidence": [
+        "frontend/src/lib/i18n.ts (truncated)",
+        "frontend/src/hooks/useClientServiceRequests.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Migration module and actor wiring via `Migration.run` (state migration scaffolding).",
-      "reason": "The BuildRequest constraints specify backend-only changes in `backend/main.mo` and do not request adding migration infrastructure/files.",
+      "description": "Backend migration changes `requestType` to a Motoko variant (`RequestType`) stored in `TaskRecord`, rather than the specified `requestType : Text` field.",
+      "reason": "BuildRequest explicitly requires `requestType : Text` with allowed uppercase values; the diff introduces a new `RequestType` variant type and stores that in the migrated record.",
+      "evidence": [
+        "backend/migration.mo"
+      ]
+    },
+    {
+      "description": "Apply migration via `(with migration = Migration.run) actor` plus adding `backend/migration.mo` unconditionally (conditional migration policy not evidenced).",
+      "reason": "BuildRequest constrains: only create/update `backend/migration.mo` if required by stable-state upgrade; the diff adds the file and wires migration application, but does not evidence that it is conditionally required by current stable layout.",
       "evidence": [
         "backend/migration.mo",
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "description": "New AuditLogEntry module and internal access-code related modules/types.",
-      "reason": "Not requested by any of REQ-67 to REQ-72; these are unrelated to Services/Tasks/Partner Wallet/Financial Summary.",
+      "description": "UI uses a `destructive` badge variant for URGENT request type.",
+      "reason": "The requirement asks for a subtle, calm emphasis for URGENT helper text; using a `destructive` badge may be more aggressive and is not explicitly requested (and the requirement emphasis was for helper text, not necessarily badge styling).",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "A different, expanded `Service` model with many fields (e.g., `code`, `title`, `category`, images, `available`, variant `Status` with many cases) instead of the specified minimal service fields.",
-      "reason": "The BuildRequest explicitly requires `Service` to have exactly the specified fields/types and package/status values.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "A different, expanded `Task` model (schedule, paymentStatus, taskStatus, many metadata fields) rather than the specified Task schema with `statusInternal` and client/partner IDs.",
-      "reason": "The BuildRequest explicitly requires `Task` to have exactly the specified fields/types.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "Frontend routing/theme/i18n work indicated by the diff summary (new routes, ThemeProvider forced to light mode, React Query hook updates, multiple page/component changes).",
-      "reason": "The BuildRequest constraints explicitly disallow modifying frontend files, routing, guards, theme, or UI; and state the work is backend-only.",
-      "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/client/ClientServiceRequestTab.tsx",
+    "frontend/src/hooks/useClientServiceRequests.ts",
+    "frontend/src/lib/i18n.ts",
+    "frontend/src/pages/client/ClientDashboardPage.tsx",
     "project_state.json"
   ]
 }

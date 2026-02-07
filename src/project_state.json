@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "Extend Asistenku backend (main.mo) with backend-only core modules for Services, Tasks, Partner Wallet, and Financial Summary, without changing existing user/role/ID logic, and enforcing empty-safe, explicit-only behavior.",
+  "projectStateVersion": 37,
+  "summary": "Extend Asistenku with a new Client Service Request (Permintaan Layanan) feature: client submits a request (title/description/requestType/deadline) that creates a Task in REQUESTED status with no auto-redirect and no service consumption/locking; Asistenmu reviews and confirms via WhatsApp and decides final jumlah layanan & schedule.",
   "architectural_notes": [
     "No auto-redirect based on role anywhere",
     "`getCallerUser` may ONLY be called when user clicks \"Ruang kerja saya\" / \"Ruang kerja\"; never on onLoad/lifecycle",
@@ -456,6 +456,150 @@
         "REQ-66"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-internal-sidebar-navigation-for-admin-and-superadmin-dashboards-to-match-the-requested-menu-structure-and-permissions-without-adding-any-financial-tab-required-items-labels-as-provided-1-ringkasan-2-manajemen-user-3-manajemen-layanan-4-manajemen-task-5-audit-log-superadmin-only-6-pengaturan-admin-can-access-all-items-except-audit-log-superadmin-can-access-all-items-for-any-non-admin-internal-role-that-somehow-reaches-these-dashboards-show-a-non-redirecting-403-style-screen-with-the-text-access-denied-english-and-a-single-button-to-go-back-to-internal-login",
+      "title": "Update the internal sidebar navigation for ADMIN and SUPERADMIN dashboards to match the requested menu structure and permissions, without adding any Financial tab.\n\nRequired items (labels as provided):\n1) Ringkasan\n2) Manajemen User\n3) Manajemen Layanan\n4) Manajemen Task\n5) Audit Log (SUPERADMIN only)\n6) Pengaturan\n\nADMIN can access all items except Audit Log. SUPERADMIN can access all items.\n\nFor any non-admin internal role that somehow reaches these dashboards, show a non-redirecting 403-style screen with the text \"Access denied\" (English) and a single button to go back to `/internal/login`.",
+      "reqIds": [
+        "REQ-90"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-manajemen-layanan-view-inside-both-admin-and-superadmin-dashboards-layout-requirements-page-title-exact-manajemen-layanan-two-cards-on-desktop-stacked-on-mobile-card-1-title-buat-layanan-card-2-title-daftar-layanan-this-page-is-ui-label-layanan-but-must-call-the-existing-backend-layananku-services-methods-no-backend-changes-it-must-render-safely-when-there-is-no-data",
+      "title": "Implement the “Manajemen Layanan” view inside both Admin and Superadmin dashboards.\n\nLayout requirements:\n- Page title (exact): “Manajemen Layanan”\n- Two cards on desktop, stacked on mobile:\n  - Card 1 title: “Buat Layanan”\n  - Card 2 title: “Daftar Layanan”\n\nThis page is UI-label “Layanan”, but must call the existing backend Layananku/Services methods (no backend changes). It must render safely when there is no data.",
+      "reqIds": [
+        "REQ-91"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-card-1-buat-layanan-form-in-manajemen-layanan-for-admin-and-superadmin-form-fields-client-identifier-input-if-the-backend-create-method-expects-a-clientid-e-g-ca-000001-label-it-client-id-if-it-expects-a-client-principal-label-it-client-principal-id-jenis-layanan-dropdown-with-values-tenang-rapi-fokus-jaga-jumlah-layanan-number-masa-aktif-start-date-end-date-convert-to-timestamps-nat-if-required-by-existing-backend-signature-asistenmu-nama-text-share-layanan-principalid-repeatable-list-default-1-input-tambah-adds-up-to-max-6-total-entries-helper-text-exact-max-6-principal-termasuk-pemilik-harga-per-layanan-only-render-this-input-if-the-existing-backend-create-update-signature-already-has-it-if-present-label-exactly-harga-per-layanan-internal-tidak-tampil-di-client-submit-button-label-exact-buat-layanan-on-submit-call-the-existing-backend-create-endpoint-e-g-createlayanankuforclient-or-existing-equivalent-show-a-success-toast-english-exact-created-successfully-on-error-show-a-toast-containing-the-english-technical-error-message-code-after-success-refresh-the-list-in-card-2-without-requiring-a-full-page-reload",
+      "title": "Implement Card 1 “Buat Layanan” form in “Manajemen Layanan” for ADMIN and SUPERADMIN.\n\nForm fields:\n- Client Identifier input:\n  - If the backend create method expects a clientId (e.g., “CA-000001”) label it “Client ID”.\n  - If it expects a client principal, label it “Client Principal ID”.\n- Jenis Layanan: dropdown with values [TENANG, RAPI, FOKUS, JAGA]\n- Jumlah Layanan: number\n- Masa Aktif: Start date + End date (convert to timestamps/Nat if required by existing backend signature)\n- Asistenmu (nama): text\n- Share Layanan (principalId): repeatable list\n  - Default: 1 input\n  - “+ Tambah” adds up to max 6 total entries\n  - Helper text (exact): “Max 6 principal termasuk pemilik”\n- (Harga per layanan): ONLY render this input if the existing backend create/update signature already has it. If present, label exactly: “Harga per layanan (internal, tidak tampil di client)”.\n\nSubmit:\n- Button label (exact): “Buat Layanan”\n- On submit, call the existing backend create endpoint (e.g., `createLayanankuForClient` or existing equivalent).\n- Show a success toast (English, exact): “Created successfully”\n- On error, show a toast containing the English technical error message/code.\n- After success, refresh the list in Card 2 without requiring a full-page reload.",
+      "reqIds": [
+        "REQ-92"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-card-2-daftar-layanan-table-in-manajemen-layanan-data-source-use-the-existing-backend-list-endpoint-s-already-available-in-this-project-for-layananku-services-prefer-the-already-existing-get-all-or-get-my-internal-list-capability-do-not-add-backend-table-columns-id-layanan-ly-xxxxxx-if-applicable-client-id-or-principal-whichever-is-available-from-returned-record-jenis-jumlah-masa-aktif-start-end-status-active-inactive-expired-if-available-otherwise-show-a-safe-placeholder-share-count-x-6-row-actions-detail-opens-a-modal-update-opens-an-edit-modal-deactivate-calls-the-existing-backend-deactivate-endpoint-empty-state-if-no-data-show-text-exact-belum-ada-layanan-dibuat-all-actions-must-keep-ui-visible-use-disabled-locked-states-during-loading-and-show-english-technical-errors-in-toasts",
+      "title": "Implement Card 2 “Daftar Layanan” table in “Manajemen Layanan”.\n\nData source:\n- Use the existing backend list endpoint(s) already available in this project for Layananku/Services (prefer the already-existing “get all” or “get my” internal list capability; do not add backend).\n\nTable columns:\n- ID Layanan (LY-xxxxxx if applicable)\n- Client (ID or Principal, whichever is available from returned record)\n- Jenis\n- Jumlah\n- Masa aktif (start–end)\n- Status (Active/Inactive/Expired if available; otherwise show a safe placeholder)\n- Share count (x/6)\n\nRow actions:\n- “Detail” opens a modal\n- “Update” opens an edit modal\n- “Deactivate” calls the existing backend deactivate endpoint\n\nEmpty state:\n- If no data, show text (exact): “Belum ada layanan dibuat.”\n\nAll actions must keep UI visible, use disabled/locked states during loading, and show English technical errors in toasts.",
+      "reqIds": [
+        "REQ-93"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-detail-and-update-modals-for-a-layanan-row-detail-modal-shows-id-client-jenis-jumlah-start-end-asistenmu-share-list-update-modal-allows-editing-only-jumlah-start-end-asistenmuname-share-list-add-remove-max-6-persist-updates-using-existing-backend-update-endpoint-s-only-e-g-updatelayanankushare-plus-any-existing-update-method-for-the-other-editable-fields-if-already-present-do-not-create-new-backend-endpoints-after-a-successful-update-close-the-modal-and-refresh-the-table-data",
+      "title": "Implement “Detail” and “Update” modals for a layanan row.\n\nDetail modal shows:\n- ID, Client, Jenis, Jumlah, Start/End, Asistenmu, Share list\n\nUpdate modal allows editing ONLY:\n- jumlah\n- start/end\n- asistenmuName\n- share list (add/remove), max 6\n\nPersist updates using existing backend update endpoint(s) only (e.g., `updateLayanankuShare` plus any existing update method for the other editable fields if already present). Do not create new backend endpoints.\n\nAfter a successful update, close the modal and refresh the table data.",
+      "reqIds": [
+        "REQ-94"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-mutations-to-call-existing-backend-layananku-services-endpoints-needed-by-manajemen-layanan-and-client-layananku-without-changing-the-backend-at-minimum-implement-frontend-side-wrappers-for-list-layanan-records-for-internal-management-table-create-layanan-deactivate-layanan-update-share-list-and-any-other-supported-updates-if-an-existing-endpoint-already-exists-client-fetch-my-layanan-list-client-check-whether-the-caller-has-an-active-layanan-using-whichever-existing-gate-method-exists-hasactiveservice-hasactivelayananku-or-myhasactivelayananku-all-queries-must-be-empty-safe-in-the-ui-and-must-not-crash-when-the-backend-returns-empty-arrays-or-null",
+      "title": "Add React Query hooks/mutations to call existing backend Layananku/Services endpoints needed by “Manajemen Layanan” and Client “Layananku”, without changing the backend.\n\nAt minimum, implement frontend-side wrappers for:\n- List layanan records for internal management table\n- Create layanan\n- Deactivate layanan\n- Update share list (and any other supported updates, if an existing endpoint already exists)\n- Client: fetch my layanan list\n- Client: check whether the caller has an active layanan (using whichever existing gate method exists: `hasActiveService`, `hasActiveLayananku`, or `myHasActiveLayananku`)\n\nAll queries must be empty-safe in the UI and must not crash when the backend returns empty arrays or null.",
+      "reqIds": [
+        "REQ-95"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-client-dashboard-tab-section-labeled-layananku-that-displays-the-client-s-layanan-list-cards-client-facing-no-price-shown-within-the-existing-client-dashboard-client-keep-existing-tabs-but-implement-the-layananku-tab-content-to-render-the-layanan-list-from-the-existing-backend-client-safe-endpoint-s-each-layanan-card-must-show-jenis-layanan-jumlah-layanan-status-masa-aktif-asistenmu-name-share-count-empty-state-if-the-client-has-no-layanan-show-an-empty-state-message-can-remain-the-existing-no-active-services-yet-if-already-present-via-i18n-or-update-copy-but-must-be-user-friendly-and-non-technical-do-not-display-any-pricing-fields-even-if-they-exist-internally",
+      "title": "Implement Client dashboard tab/section labeled “Layananku” that displays the client’s layanan list/cards (client-facing, no price shown).\n\nWithin the existing Client dashboard (`/client`):\n- Keep existing tabs, but implement the “layananku” tab content to render the layanan list from the existing backend client-safe endpoint(s).\n- Each layanan card must show:\n  - Jenis layanan\n  - Jumlah layanan\n  - Status\n  - Masa aktif\n  - Asistenmu name\n  - Share count\n\nEmpty state:\n- If the client has no layanan, show an empty state message (can remain the existing “No active services yet.” if already present via i18n, or update copy, but must be user-friendly and non-technical).\n\nDo not display any pricing fields even if they exist internally.",
+      "reqIds": [
+        "REQ-96"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-client-unlock-logic-for-delegation-task-actions-based-on-active-layanan-rules-use-the-existing-backend-gate-method-available-in-this-project-hasactiveservice-or-hasactivelayananku-or-myhasactivelayananku-whichever-exists-if-not-active-show-banner-text-exact-anda-belum-mempunyai-layanan-aktif-silahkan-hubungi-admin-keep-delegation-task-actions-locked-disabled-rather-than-hidden-with-a-clear-tooltip-message-if-active-delegation-task-actions-become-enabled-note-do-not-introduce-auto-redirects-ui-must-remain-visible-and-stable-regardless-of-active-inactive-state",
+      "title": "Implement Client unlock logic for Delegation/Task actions based on active layanan.\n\nRules:\n- Use the existing backend gate method available in this project (`hasActiveService` OR `hasActiveLayananku` OR `myHasActiveLayananku`, whichever exists).\n- If NOT active:\n  - Show banner text (exact): “Anda belum mempunyai layanan aktif. Silahkan hubungi admin.”\n  - Keep Delegation/Task actions LOCKED (disabled) rather than hidden, with a clear tooltip/message.\n- If active:\n  - Delegation/Task actions become enabled.\n\nNote: Do not introduce auto-redirects. UI must remain visible and stable regardless of active/inactive state.",
+      "reqIds": [
+        "REQ-97"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-and-or-complete-the-client-profile-read-only-fields-for-clientid-and-principalid-with-copy-to-clipboard-ensure-the-client-profile-tab-continues-to-show-client-id-read-only-copy-button-principal-id-read-only-copy-button-if-either-is-missing-empty-the-ui-must-still-render-safely-without-crashing",
+      "title": "Preserve and/or complete the Client Profile read-only fields for clientId and principalId with copy-to-clipboard.\n\nEnsure the Client Profile tab continues to show:\n- Client ID (read-only, copy button)\n- Principal ID (read-only, copy button)\n\nIf either is missing/empty, the UI must still render safely without crashing.",
+      "reqIds": [
+        "REQ-98"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-add-react-query-hooks-mutations-to-call-the-new-backend-endpoints-for-asistenmu-assignment-implement-a-query-hook-for-getasistenmucandidates-and-a-mutation-hook-for-assignasistenmutolayananku-layanankuid-asistenmuprincipalid-hooks-must-be-actor-readiness-safe-throw-show-technical-errors-in-english-like-existing-hooks-when-actor-is-unavailable-and-invalidate-refetch-the-appropriate-queries-so-the-management-tables-and-client-views-update-without-a-full-reload",
+      "title": "Frontend: Add React Query hooks/mutations to call the new backend endpoints for ASISTENMU assignment. Implement a query hook for `getAsistenmuCandidates()` and a mutation hook for `assignAsistenmuToLayananku(layanankuId, asistenmuPrincipalId)`. Hooks must be actor-readiness safe (throw/show technical errors in English like existing hooks when actor is unavailable) and invalidate/refetch the appropriate queries so the management tables and client views update without a full reload.",
+      "reqIds": [
+        "REQ-105"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-manajemen-layanan-admin-superadmin-update-the-buat-layanan-form-frontend-src-components-layanan-buatlayananform-tsx-to-include-a-required-asistenmu-dropdown-field-requirements-label-must-be-asistenmu-and-placeholder-must-be-pilih-asistenmu-data-source-call-getasistenmucandidates-when-the-view-loads-admin-superadmin-only-placement-between-jenis-layanan-and-the-masa-aktif-date-inputs-on-submit-a-create-layananku-as-usual-via-existing-create-flow-b-after-obtaining-the-created-layanankuid-call-assignasistenmutolayananku-layanankuid-selectedasistenmuprincipalid-if-step-b-fails-show-a-non-blocking-warning-toast-with-the-exact-english-message-created-but-failed-to-assign-asistenmu-please-edit-and-retry-do-not-change-landing-footer-theme-hero-logo-routes-and-do-not-change-max-6-share-logic",
+      "title": "Frontend (Manajemen Layanan / Admin & Superadmin): Update the \"Buat Layanan\" form (frontend/src/components/layanan/BuatLayananForm.tsx) to include a required ASISTENMU dropdown field. Requirements: label must be \"Asistenmu\" and placeholder must be \"Pilih Asistenmu\". Data source: call `getAsistenmuCandidates()` when the view loads (Admin/Superadmin only). Placement: between \"Jenis Layanan\" and the \"Masa Aktif\" date inputs. On submit: (a) create Layananku as usual via existing create flow; (b) after obtaining the created `layanankuId`, call `assignAsistenmuToLayananku(layanankuId, selectedAsistenmuPrincipalId)`. If step (b) fails, show a non-blocking warning toast with the exact English message: \"Created, but failed to assign Asistenmu. Please edit and retry.\" Do not change landing/footer/theme/hero/logo/routes and do not change max-6 share logic.",
+      "reqIds": [
+        "REQ-106"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-manajemen-layanan-admin-superadmin-update-the-layanan-list-ui-frontend-src-components-layanan-daftarlayanantable-tsx-and-related-modals-to-display-the-asistenmu-name-per-item-as-asistenmu-name-or-add-an-edit-asistenmu-row-action-that-opens-a-small-modal-with-the-same-dropdown-candidates-on-save-call-assignasistenmutolayananku-all-ui-must-remain-visible-during-loading-disable-buttons-inputs-as-needed-and-show-technical-errors-in-english-toasts",
+      "title": "Frontend (Manajemen Layanan / Admin & Superadmin): Update the layanan list UI (frontend/src/components/layanan/DaftarLayananTable.tsx and related modals) to display the ASISTENMU name per item as: \"Asistenmu: <name or —>\". Add an \"Edit Asistenmu\" row action that opens a small modal with the same dropdown candidates. On save, call `assignAsistenmuToLayananku`. All UI must remain visible during loading (disable buttons/inputs as needed) and show technical errors in English toasts.",
+      "reqIds": [
+        "REQ-107"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-client-workspace-update-the-client-layananku-my-services-tab-ui-frontend-src-components-client-clientlayanankutab-tsx-to-show-the-assigned-asistenmu-name-read-only-on-each-layanan-card-as-asistenmu-asistenmuname-or-do-not-add-any-client-side-edit-capability-for-this-field",
+      "title": "Frontend (Client workspace): Update the client \"Layananku\" / \"My Services\" tab UI (frontend/src/components/client/ClientLayanankuTab.tsx) to show the assigned ASISTENMU name read-only on each layanan card as: \"Asistenmu: <asistenmuName or —>\". Do not add any client-side edit capability for this field.",
+      "reqIds": [
+        "REQ-108"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-react-query-hooks-mutations-for-the-client-request-flow-create-a-service-request-task-and-list-the-caller-s-submitted-requests-using-the-existing-actor-readiness-patterns-and-error-handling-style",
+      "title": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+      "reqIds": [
+        "REQ-112"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-client-dashboard-service-request-ui-inside-the-existing-client-workspace-a-form-to-submit-a-request-and-a-list-view-showing-the-client-s-submitted-requests-with-requesttype-badges-and-default-status-requested",
+      "title": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+      "reqIds": [
+        "REQ-113"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-successful-client-request-submission-keep-the-user-on-the-same-page-no-auto-redirect-and-show-an-english-success-message-on-failure-show-a-non-crashing-error-state-toast-while-keeping-the-ui-visible",
+      "title": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+      "reqIds": [
+        "REQ-114"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-requesttype-helper-texts-are-displayed-for-each-option-in-the-client-form-in-english-including-a-lightly-highlighted-note-for-urgent",
+      "title": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
+      "reqIds": [
+        "REQ-115"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-new-client-request-ui-copy-into-the-existing-frontend-i18n-system-by-adding-new-translation-keys-en-id-but-keep-all-technical-system-backend-error-strings-in-english-and-never-use-translated-strings-in-logic-branching",
+      "title": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
+      "reqIds": [
+        "REQ-116"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -750,6 +894,262 @@
       "summary": "Backend-only: Implement Financial Summary aggregation and endpoint for SUPERADMIN with fully empty-safe 0/empty-map outputs when services/wallets are absent.",
       "reqIds": [
         "REQ-72"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-60",
+      "summary": "BACKEND ONLY: Implement “Layananku” module in backend/main.mo (replace Service concept) with data model (kind TENANG/RAPI/FOKUS/JAGA; status active/inactive/expired), storage indexes by id and clientId, LY-000001 ID generator, helpers compute status/access/toPublic, empty-safe queries hasActiveLayananku(clientId) + myHasActiveLayananku() + getMyLayananku() (never expose hargaPerLayanan to client), and ADMIN/SUPERADMIN shared endpoints createLayanankuForClient (share max 6 incl client), updateLayanankuShare (ensure client principal included, max 6), deactivateLayananku; no UI changes, no auto actions/background jobs, no changes to UserProfile/roles/status/CA-/PA- IDs.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-61",
+      "summary": "In `backend/main.mo` only, add the new backend-only “Layananku” data model exactly as specified, including: (1) `LayananKind` variant type with `#TENANG | #RAPI | #FOKUS | #JAGA`, (2) `LayananStatus` variant type with `#active | #inactive | #expired`, and (3) `LayanankuRecord` with both `LayanankuRecord` (internal) and `LayanankuPublic` (client-safe) where `LayanankuPublic` MUST NOT include `hargaPerLayanan`.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "In `backend/main.mo` only, add Layananku storage state exactly as specified: `layanankuById : Map<Text, LayanankuRecord>`, `layanankuByClientId : Map<Text, [LayanankuRecord]>`, and a `var layanankuCounter : Nat` with an ID generator that produces `LY-000001` style IDs (6-digit zero padding) in the format `LY-XXXXXX`.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-63",
+      "summary": "In `backend/main.mo` only, implement the helper functions exactly as specified: (1) `computeLayananStatus(now, startAt, endAt)` returning `#inactive` if `now < startAt`, `#active` if within `[startAt, endAt]`, else `#expired`; (2) `principalHasAccess(principalText, rec)` returning true only if `principalText` exists in `rec.sharePrincipals`; and (3) `toPublic(rec)` converting an internal record to the safe `LayanankuPublic` (excluding `hargaPerLayanan`).",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-64",
+      "summary": "In `backend/main.mo` only, implement query `hasActiveLayananku(clientId : Text) : async Bool` that is empty-safe and returns true if and only if the client has at least one Layananku whose computed status at `now` is `#active`. Use the same `now` source as specified in the prompt (`auditLogCounter`) and do not introduce any background job or auto-update loop.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-65",
+      "summary": "In `backend/main.mo` only, implement query `myHasActiveLayananku() : async Bool` that is empty-safe: (1) returns false for anonymous callers; (2) if caller is a CLIENT, checks active status using `hasActiveLayananku(profile.id)`; (3) otherwise checks across all Layananku records where `principalHasAccess(caller.toText(), record)` and computed status is `#active`. Use `auditLogCounter` as `now` as specified.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-66",
+      "summary": "In `backend/main.mo` only, implement query `getMyLayananku() : async [LayanankuPublic]` that is empty-safe: (1) returns `[]` for anonymous callers or if the caller has no user profile; (2) if role is ADMIN or SUPERADMIN, returns all records converted using `toPublic`; (3) otherwise returns only records where `principalHasAccess(caller.toText(), rec)` and always returns `LayanankuPublic` (never exposing `hargaPerLayanan`).",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-67",
+      "summary": "In `backend/main.mo` only, implement query `getLayanankuInternal(idLayanan : Text) : async ?LayanankuRecord` that is restricted to ADMIN and SUPERADMIN only; unauthorized callers MUST trap with `\"Unauthorized\"`. This endpoint may return internal records including `hargaPerLayanan` and must be empty-safe in the sense that non-existent IDs return `null` (not a trap).",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-68",
+      "summary": "In `backend/main.mo` only, implement shared `createLayanankuForClient(...) : async Text` exactly as specified with these rules: (1) only ADMIN/SUPERADMIN may call (unauthorized traps with `\"Unauthorized\"`), (2) `endAt` must be strictly greater than `startAt` else trap with `\"INVALID_PERIOD\"`, (3) `clientId` must exist and have role CLIENT else trap with `\"CLIENT_NOT_FOUND\"` or `\"TARGET_NOT_CLIENT\"` respectively, (4) sharing must include the client’s principalId and `sharePrincipals.size()` must be <= 6 else trap with `\"SHARE_LIMIT_EXCEEDED_MAX_6\"`, (5) store record into both indexes, and (6) return the generated `LY-XXXXXX` ID. Do not change existing CA-/PA- user ID generation logic or any existing profile/role/status behavior.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-69",
+      "summary": "In `backend/main.mo` only, implement shared `updateLayanankuShare(idLayanan, newSharePrincipals) : async Bool` exactly as specified: (1) ADMIN/SUPERADMIN-only (unauthorized traps with `\"Unauthorized\"`), (2) returns `false` if `idLayanan` not found (no trap), (3) ensures the client’s principalId is included in the final share list even if not provided, (4) enforces max 6 principals with trap `\"SHARE_LIMIT_EXCEEDED_MAX_6\"`, (5) updates both `layanankuById` and the corresponding entry inside `layanankuByClientId` list, and (6) recomputes status via `computeLayananStatus(now, startAt, endAt)` where `now` uses `auditLogCounter` per the prompt.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-70",
+      "summary": "In `backend/main.mo` only, implement shared `deactivateLayananku(idLayanan) : async Bool` exactly as specified: (1) ADMIN/SUPERADMIN-only (unauthorized traps with `\"Unauthorized\"`), (2) returns `false` if missing record, (3) sets `status = #inactive` and updates `updatedAt = now` using the prompt’s `now` source (`auditLogCounter`), (4) updates both `layanankuById` and `layanankuByClientId` list to keep them consistent.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-71",
+      "summary": "Ensure all new Layananku endpoints are empty-safe and do not introduce any automatic actions/background jobs. In particular: queries must return `false`/`[]`/`null` for missing data as specified; only explicit shared calls may mutate Layananku state; and the module must not change any existing client/partner ID formats (`CA-`/`PA-`), `UserProfile` schema, role strings (UPPERCASE), or existing status handling.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-72",
+      "summary": "Add/extend audit logging calls for Layananku mutations to match the prompt’s intent: on create/update share/deactivate, record an audit log entry using the existing audit log mechanism and include the metadata text exactly as in the prompt strings: `\"Create Layananku <id>\"`, `\"Update share Layananku <id>\"`, and `\"Deactivate Layananku <id>\"`. Do not change the audit log type definitions or existing actionType values beyond reusing an existing action type (`#updateCodeData`) exactly as shown in the prompt.",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-73",
+      "summary": "BACKEND ONLY: Implement minimal Task module in backend/main.mo (no UI/guard/theme changes) dependent on existing Layananku/myHasActiveLayananku gate. Add TaskStatusInternal (REQUESTED/IN_PROGRESS/QA_ASISTENMU/REVISION/DONE), TaskRecord fields as specified, storage indexes (tasksById, taskIdsByClientId, taskIdsByPartnerId) and TS-000001 ID generator. Endpoints: createTask (CLIENT-only, requires myHasActiveLayananku true else trap NO_ACTIVE_LAYANAN), getMyClientTasks empty-safe, getMyPartnerTasks (PARTNER sees only assigned), internal assignTaskToPartner + setTaskStatus (ASISTENMU/ADMIN/SUPERADMIN), and getTaskById access control (client owner / assigned partner / internal editors). All queries empty-safe; no auto/background behavior.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-74",
+      "summary": "In `backend/main.mo` (single-actor), add a new minimal Task data model exactly as specified by the user: `TaskStatusInternal` variant with `#REQUESTED | #IN_PROGRESS | #QA_ASISTENMU | #REVISION | #DONE`, and `TaskRecord` record with fields: `taskId, clientId, createdByPrincipal, title, description, clientDeadline:?Nat, internalDeadline:?Nat, assignedPartnerId:?Text, assignedAsistenmuName:Text, statusInternal:TaskStatusInternal, createdAt:Nat, updatedAt:Nat`.",
+      "reqIds": [
+        "REQ-85"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-75",
+      "summary": "In `backend/main.mo`, implement Task storage and indexes exactly as specified: `tasksById : Map<Text, TaskRecord>`, `taskIdsByClientId : Map<Text, [Text]>`, `taskIdsByPartnerId : Map<Text, [Text]>`, and `var taskCounter : Nat`. Add helpers: `generateTaskId()` producing `TS-000001` format with 6-digit zero padding; `appendId(...)`; and `removeId(...)` (needed for reassignment).",
+      "reqIds": [
+        "REQ-86"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-76",
+      "summary": "Implement the backend Task endpoints exactly as specified, using the existing `userProfilesByPrincipal`, `userProfilesById`, existing roles (do not change role casing rules), and the existing `myHasActiveLayananku()` gate. Endpoints required:\n- CLIENT: `createTask(title, description, clientDeadline) : async Text` with authorization + gating traps exactly: `UNAUTHORIZED` for anonymous/missing profile, `ONLY_CLIENT` for non-client, `NO_ACTIVE_LAYANAN` when `await myHasActiveLayananku()` is false.\n- CLIENT query: `getMyClientTasks() : async [TaskRecord]` empty-safe; must not trap when empty.\n- PARTNER query: `getMyPartnerTasks() : async [TaskRecord]` empty-safe; partner only sees tasks assigned to their partnerId.\n- INTERNAL shared: `assignTaskToPartner(taskId, partnerId, internalDeadline, asistenmuName) : async Bool` restricted to roles `ASISTENMU | ADMIN | SUPERADMIN`; validates partner exists and has role `PARTNER` (trap `PARTNER_NOT_FOUND` / `TARGET_NOT_PARTNER`); sets `assignedPartnerId`, `internalDeadline`, `assignedAsistenmuName`, sets status to `#IN_PROGRESS`; returns `false` if taskId missing (no trap).\n- INTERNAL shared: `setTaskStatus(taskId, statusInternal) : async Bool` restricted to `ASISTENMU | ADMIN | SUPERADMIN`; returns `false` if task missing.\n- Query: `getTaskById(taskId) : async ?TaskRecord` empty-safe and access-controlled: allow ADMIN/SUPERADMIN/ASISTENMU; allow CLIENT if `t.clientId == callerProfile.id`; allow PARTNER only if `t.assignedPartnerId == ?callerProfile.id`; otherwise return `null`.\nAll query endpoints must be empty-safe (return `[]`/`null` instead of trapping) even when maps contain dangling IDs.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-77",
+      "summary": "Resolve naming/type conflicts with the existing legacy Task implementation currently present in `backend/main.mo` (e.g., `module Task`, `let tasks = Map.empty<Text, Task.Task>()`, `createTask(task : Task.Task)`, `getTaskById(taskId) : async ?Task.Task`, `getAllTasks()`). The canister must expose the new minimal Task module endpoints named exactly as in the user spec (`createTask(title, description, clientDeadline)`, `getMyClientTasks`, `getMyPartnerTasks`, `assignTaskToPartner`, `setTaskStatus`, `getTaskById`) without Motoko duplicate-definition errors.",
+      "reqIds": [
+        "REQ-88"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-78",
+      "summary": "In `backend/main.mo`, adapt/merge the provided “TASK INTERNAL CONTROL” access rules into the existing Minimal Task module by updating ONLY the access-control logic inside the Minimal Task `getTaskById(taskId : Text) : async ?MinimalTask.TaskRecord` method. The update must enforce: (1) anonymous callers return `null`; (2) callers with role `ADMIN`, `SUPERADMIN`, or `ASISTENMU` may read any task; (3) callers with role `CLIENT` may read only tasks where `task.clientId == callerProfile.id`; (4) callers with role `PARTNER` may read only tasks where `task.assignedPartnerId` is set and equals `callerProfile.id`; otherwise return `null`.",
+      "reqIds": [
+        "REQ-89"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-79",
+      "summary": "UI-only: Build/update internal sidebar navigation for ADMIN & SUPERADMIN (no Financial tab). Items: Ringkasan, Manajemen User, Manajemen Layanan, Manajemen Task, Pengaturan; plus Audit Log (SUPERADMIN only). Non-admin roles see a 403 “Access denied” page (no redirects).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-80",
+      "summary": "UI-only: Implement internal page “Manajemen Layanan” for ADMIN & SUPERADMIN with two cards (Buat Layanan form + Daftar Layanan table). Use existing backend endpoints only (e.g., createLayanankuForClient/getMyLayananku/getLayanankuInternal/updateLayanankuShare/deactivateLayananku as available). Includes create, list, detail modal, edit modal (edit only jumlah/start-end/asistenmu/share; max 6 share principals), deactivate action, empty-safe states, English technical error toasts, and list refresh after mutations.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-81",
+      "summary": "UI-only: Add Client workspace tab/section “Layananku” showing client’s layanan list/cards (no price). Implement unlock logic for Delegasi/Task based on existing backend gate (hasActiveService/hasActiveLayananku/myHasActiveLayananku—whichever exists). If no active layanan, show banner “Anda belum mempunyai layanan aktif. Silahkan hubungi admin.” and keep Delegasi/Task buttons LOCKED (disabled) with message; if active, enable them. Keep Client Profile showing clientId + principalId with copy.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-82",
+      "summary": "BACKEND ONLY: Add ASISTENMU assignment support to Layananku in backend/main.mo. Data model: add optional fields `asistenmuPrincipalId : ?Text` and `asistenmuNameSnapshot : ?Text` to LayanankuRecord (keep existing IDs/generators unchanged). Authorization: only ADMIN/SUPERADMIN can assign; clients read-only. Endpoints: (1) `getAsistenmuCandidates()` (ADMIN/SUPERADMIN-only) returning minimal DTO (principalId, internalData.name, role, status) for users with role ASISTENMU; (2) `assignAsistenmuToLayananku(layanankuId, asistenmuPrincipalId)` (ADMIN/SUPERADMIN-only) validates record and target user role==ASISTENMU, updates record and writes audit log (#updateCodeData); (3) extend existing client/service list response (or add `getLayanankuForClient(clientId)`) to include resolved `asistenmuName : ?Text` from `userProfilesByPrincipal[asistenmuPrincipalId].internalData.name`. Backward compatible: existing records valid with null; keep existing create signature working (optional extra param allowed but not required). Errors technical English (Unauthorized, Layananku not found, Invalid asistenmuPrincipalId, Target user is not ASISTENMU).",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-83",
+      "summary": "UI-only: In Admin/Superadmin “Manajemen Layanan”, add required Asistenmu dropdown (label “Asistenmu”, placeholder “Pilih Asistenmu”) sourced from backend `getAsistenmuCandidates()`; on create: create Layananku then call `assignAsistenmuToLayananku` (if assignment fails show non-blocking warning toast: “Created, but failed to assign Asistenmu. Please edit and retry.”). In Daftar Layanan list, display “Asistenmu: <name or —>” and add “Edit Asistenmu” modal to reassign via `assignAsistenmuToLayananku`. In Client workspace Layananku/My Services tab, display read-only “Asistenmu: <name>”. Do not change landing/footer/theme/hero/logo/routes; keep share max-6 logic unchanged; technical toasts/errors in English OK.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-84",
+      "summary": "Backend (backend/main.mo): Extend the Layananku record data model to store an optional ASISTENMU assignment without changing any existing ID formats or generators. Add these fields to the existing Layananku internal record type (LayanankuRecord.LayanankuRecord): `asistenmuPrincipalId : ?Text` and `asistenmuNameSnapshot : ?Text`. Keep all existing fields unchanged, and ensure existing stored Layananku records remain valid when these fields are null.",
+      "reqIds": [
+        "REQ-99"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-85",
+      "summary": "Backend (backend/main.mo): Enforce authorization rules for ASISTENMU assignment on Layananku. Only callers with role SUPERADMIN or ADMIN may assign or change `asistenmuPrincipalId`. Clients (and ASISTENMU themselves) must not be able to modify the ASISTENMU assignment; clients may only read their own Layananku data as already allowed by existing endpoints.",
+      "reqIds": [
+        "REQ-100"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-86",
+      "summary": "Backend (backend/main.mo): Add a new ADMIN/SUPERADMIN-only query endpoint `getAsistenmuCandidates()` that returns a list of internal user candidates where `role == \"ASISTENMU\"`. The response must be minimal and safe for a dropdown (principalId, internalData.name, role, status). If returning the full UserProfile would expose unnecessary fields, return a simplified DTO instead. Unauthorized callers must trap with \"Unauthorized\".",
+      "reqIds": [
+        "REQ-101"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-87",
+      "summary": "Backend (backend/main.mo): Add a new ADMIN/SUPERADMIN-only shared endpoint `assignAsistenmuToLayananku(layanankuId: Text, asistenmuPrincipalId: Text) : async Bool`. It must: (1) validate caller role is ADMIN/SUPERADMIN (else trap \"Unauthorized\"), (2) validate the target Layananku exists (else trap \"Layananku not found\"), (3) validate the target asistenmuPrincipalId exists in userProfilesByPrincipal and has role ASISTENMU (else trap \"Invalid asistenmuPrincipalId\" or \"Target user is not ASISTENMU\"), (4) set `asistenmuPrincipalId = ?asistenmuPrincipalId`, (5) optionally set `asistenmuNameSnapshot = ?internalData.name` when available (else null), (6) persist updates in both `layanankuById` and `layanankuByClientId` indexes so they remain consistent, and (7) write an audit log entry using the existing audit mechanism (`addAuditLog`) with actionType `#updateCodeData` (or an existing service-update action type if already present) without heavy refactoring.",
+      "reqIds": [
+        "REQ-102"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-88",
+      "summary": "Backend (backend/main.mo): Extend client/service list responses to include a resolved, display-ready `asistenmuName : ?Text` derived from `userProfilesByPrincipal[asistenmuPrincipalId].internalData.name` while keeping the base Layananku record unchanged. If you already have a get-by-client method, extend it; otherwise add `getLayanankuForClient(clientId: Text) : async [<record with asistenmuName>]` as described. The resolved name must be optional and empty-safe (null when no assignment or no resolvable internalData.name).",
+      "reqIds": [
+        "REQ-103"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-89",
+      "summary": "Backend (backend/main.mo): Maintain backward compatibility for existing create flow and stored data. Do not break the existing `createLayanankuForClient(...)` signature used by the frontend. If you extend it to optionally accept `asistenmuPrincipalId`, the old signature must still work. Existing Layananku records must remain valid when ASISTENMU assignment fields are null.",
+      "reqIds": [
+        "REQ-104"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-90",
+      "summary": "Build Client Service Request (Permintaan Layanan) feature: add Client dashboard UI (request form + list with requestType badges) and minimal backend support by adding Task field `requestType` (allowed NORMAL/PRIORITY/URGENT) while keeping task status REQUESTED and avoiding any service locking/consumption/automation/auto-redirects; Asistenmu remains the final gatekeeper via WhatsApp confirmation.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-91",
+      "summary": "Extend the backend Minimal Task record to store a client request priority field `requestType : Text` with allowed values exactly: \"NORMAL\", \"PRIORITY\", \"URGENT\".",
+      "reqIds": [
+        "REQ-109"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-92",
+      "summary": "Update the backend client task creation endpoint to accept and persist `requestType`, while keeping the global rules: client does not set/consume layanan quantities; created tasks must always start in REQUESTED status; and there must be no auto-redirect or automation triggered by backend writes.",
+      "reqIds": [
+        "REQ-110"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-93",
+      "summary": "Ensure backward compatibility for any existing stored Minimal Task records by safely defaulting missing `requestType` to \"NORMAL\" during read and/or by performing a conditional state migration on upgrade.",
+      "reqIds": [
+        "REQ-111"
       ],
       "status": "pending"
     }

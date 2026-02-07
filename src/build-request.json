@@ -1,170 +1,170 @@
 {
   "kind": "build_request",
-  "title": "Backend-only Asistenku core modules: Services, Tasks, Partner Wallet, Financial Summary",
-  "priority": "high",
+  "title": "Add Client Service Request (task request) UI + minimal backend support (requestType)",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-67",
-      "text": "Backend-only: Extend `backend/main.mo` with a new Services module that introduces the Service data model and storage indexes, without changing any existing User/Role/ID logic or existing userProfiles maps.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-2"
-        ],
-        "quotes": [
-          "BACKEND ONLY — ASISTENKU CORE MODULES (SERVICES → TASKS → PARTNER WALLET → FINANCIAL SUMMARY)",
-          "MODULE 1 — SERVICES (FOUNDATION FOR GMV & hasActiveService)",
-          "Do NOT change existing User / Role / ID logic.",
-          "Do NOT redesign existing models. Extend only.",
-          "All new data must be compatible with current main.mo userProfiles."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Define `Service` with exactly these fields and types: `serviceId: Text`, `clientId: Text`, `packageName: Text` (values: \"TENANG\" | \"RAPI\" | \"FOKUS\" | \"JAGA\"), `priceIdr: Nat`, `status: Text` (values: \"ACTIVE\" | \"INACTIVE\"), `createdAt: Nat`, `updatedAt: Nat`.",
-        "Add storage maps: `servicesById : Map<Text, Service>` and `servicesByClientId : Map<Text, [Text]>` (clientId -> serviceId list).",
-        "The addition compiles cleanly in Motoko and does not require any frontend changes.",
-        "No existing `UserProfile`, role normalization, registration, or ID generation functions are modified in behavior/format."
-      ]
-    },
-    {
-      "id": "REQ-68",
-      "text": "Backend-only: Implement Services endpoints with explicit, role-based authorization rules and empty-safe reads.",
+      "id": "REQ-109",
+      "text": "Extend the backend Minimal Task record to store a client request priority field `requestType : Text` with allowed values exactly: \"NORMAL\", \"PRIORITY\", \"URGENT\".",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "STEP 2 — ENDPOINTS Add functions: createService... setServiceStatus... getServicesByClientId... hasActiveServiceForCaller... getServiceStats...",
-          "Rules: Services are CREATED ONLY by ADMIN or SUPERADMIN. Client cannot create or modify services.",
-          "STEP 3 — SAFETY - If client has no services → return empty list. - If no services exist → all stats return 0. - No traps for missing data."
+          "BACKEND — TASK RECORD (MINIMAL ADDITION)\n\nAdd field to Task:\n- requestType : Text\n  Allowed values:\n  \"NORMAL\"\n  \"PRIORITY\"\n  \"URGENT\""
         ]
       },
       "acceptanceCriteria": [
-        "Expose `createService(clientId: Text, packageName: Text, priceIdr: Nat) : async Text` that can only be called by callers whose stored role is ADMIN or SUPERADMIN; it returns a new `serviceId`.",
-        "Expose `setServiceStatus(serviceId: Text, status: Text) : async ()` that can only be called by ADMIN or SUPERADMIN.",
-        "Expose `getServicesByClientId(clientId: Text) : async [Service]` that can be called by (a) the owner CLIENT whose `UserProfile.id == clientId`, or (b) ADMIN/SUPERADMIN; otherwise it traps with an authorization error.",
-        "Expose `hasActiveServiceForCaller() : async Bool` callable by CLIENT only; it returns `true` iff there exists at least one service for that caller’s clientId with `status == \"ACTIVE\"`; if the caller has no services, it returns `false` (no traps for empty).",
-        "Expose `getServiceStats() : async { totalAll : Nat; totalActive : Nat; totalInactive : Nat; byPackageAll : Map<Text, Nat> }` callable by SUPERADMIN only.",
-        "Stats logic matches spec: `totalAll` sums `priceIdr` for all services; `totalActive` sums where `status==\"ACTIVE\"`; `totalInactive` sums where `status==\"INACTIVE\"`; `byPackageAll` sums by `packageName` ignoring status.",
-        "Empty-safe: if there are no services, stats return zeros and `byPackageAll` returns an empty map; `getServicesByClientId` returns `[]` when none exist; no traps occur due to missing map entries."
+        "The MinimalTask.TaskRecord type in backend/main.mo includes a new field `requestType : Text`.",
+        "All stored/returned TaskRecord values always contain `requestType` as one of: NORMAL, PRIORITY, URGENT (uppercase).",
+        "No other task/service lifecycle logic is added (no service locking, no consumption, no auto transitions)."
       ]
     },
     {
-      "id": "REQ-69",
-      "text": "Backend-only: Extend `backend/main.mo` with a new Tasks module that introduces the Task data model and storage indexes, without changing any existing User/Role/ID logic.",
+      "id": "REQ-110",
+      "text": "Update the backend client task creation endpoint to accept and persist `requestType`, while keeping the global rules: client does not set/consume layanan quantities; created tasks must always start in REQUESTED status; and there must be no auto-redirect or automation triggered by backend writes.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "MODULE 2 — TASKS (FOUNDATION FOR DELEGATION FLOW)",
-          "STEP 1 — DATA MODEL Create Task model... Storage...",
-          "HARD RULES (WAJIB): ... Do NOT redesign existing models. Extend only."
+          "GLOBAL RULES\n- Client TIDAK menentukan jumlah layanan.\n- Client TIDAK mengunci / mengurangi layanan.\n- Semua request berstatus REQUESTED.\n- Tidak ada auto-redirect setelah submit.\n- Tidak ada automasi konsumsi layanan.\n- Asistenmu adalah gatekeeper final.\n\nOn Submit:\n- Create task with status = REQUESTED"
         ]
       },
       "acceptanceCriteria": [
-        "Define `Task` with exactly these fields and types: `taskId: Text`, `clientId: Text`, `partnerId: ?Text`, `title: Text`, `description: Text`, `clientDeadline: ?Nat`, `internalDeadline: ?Nat`, `statusInternal: Text` (values: \"REQUESTED\" | \"IN_PROGRESS\" | \"QA\" | \"REVISION\" | \"DONE\"), `createdAt: Nat`, `updatedAt: Nat`.",
-        "Add storage maps: `tasksById : Map<Text, Task>`, `tasksByClientId : Map<Text, [Text]>`, `tasksByPartnerId : Map<Text, [Text]>`.",
-        "No existing profile/role/ID logic is altered; tasks are stored independently and reference `clientId`/`partnerId` only by text IDs."
+        "Backend `createTask(...)` (the Minimal Task create endpoint) accepts a `requestType : Text` argument (or equivalent) and stores it into the new TaskRecord field.",
+        "If `requestType` is not one of NORMAL/PRIORITY/URGENT (after trimming), the backend rejects the call with a clear technical trap message in English (e.g., \"INVALID_REQUEST_TYPE\").",
+        "Created task records always have `statusInternal = #REQUESTED` and do not mutate any Layananku/service counters or statuses."
       ]
     },
     {
-      "id": "REQ-70",
-      "text": "Backend-only: Implement Tasks endpoints with explicit-only behavior (no auto assignment/transitions) and empty-safe reads. `createTask` must require an ACTIVE service and trap with a clear message when blocked.",
+      "id": "REQ-111",
+      "text": "Ensure backward compatibility for any existing stored Minimal Task records by safely defaulting missing `requestType` to \"NORMAL\" during read and/or by performing a conditional state migration on upgrade.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "STEP 2 — ENDPOINTS - createTask... (CLIENT only) Backend must check: caller has ACTIVE service (use hasActiveServiceForCaller) if not active → trap with clear message",
-          "- assignTask... (ASISTENMU / ADMIN / SUPERADMIN)",
-          "- setTaskStatus... (ASISTENMU / ADMIN / SUPERADMIN)",
-          "- getMyClientTasks... (CLIENT only)",
-          "- getMyPartnerTasks... (PARTNER only)",
-          "STEP 3 — SAFETY - If no tasks → return []. - Partner without tasks → []. - No auto assignment or auto transitions."
+          "BACKEND — TASK RECORD (MINIMAL ADDITION)\n\nAdd field to Task:\n- requestType : Text"
         ]
       },
       "acceptanceCriteria": [
-        "Expose `createTask(title: Text, description: Text, clientDeadline: ?Nat) : async Text` callable by CLIENT only; it checks `await hasActiveServiceForCaller()` and if `false` it traps with a clear, user-readable message (English).",
-        "On successful `createTask`, a new Task is created with `clientId` set to the caller’s clientId (`UserProfile.id`), `partnerId=null`, `statusInternal=\"REQUESTED\"`, and timestamps set; it is indexed in `tasksById` and `tasksByClientId`.",
-        "Expose `assignTask(taskId: Text, partnerId: Text) : async ()` callable only by ASISTENMU, ADMIN, or SUPERADMIN; it sets `partnerId=?partnerId` and updates indexes (`tasksByPartnerId`) without any auto side effects.",
-        "Expose `setTaskStatus(taskId: Text, statusInternal: Text) : async ()` callable only by ASISTENMU, ADMIN, or SUPERADMIN; it updates only the status and timestamps (no auto transitions).",
-        "Expose `getMyClientTasks() : async [Task]` callable by CLIENT only; returns `[]` if none.",
-        "Expose `getMyPartnerTasks() : async [Task]` callable by PARTNER only; returns `[]` if none.",
-        "All list endpoints are empty-safe and never trap due to missing task indexes or missing IDs; missing task IDs for update endpoints do not trap due to missing map entries (they must handle absent values safely, e.g., no-op or explicit error), except for role/authorization checks."
+        "After deploying the update, the canister does not trap on reading previously stored tasks that were created before `requestType` existed.",
+        "Any pre-existing task returned by `getMyClientTasks`, `getMyPartnerTasks`, and `getTaskById` includes a non-empty `requestType` (defaults to \"NORMAL\" if it was missing).",
+        "Migration logic is added only if required by the current stable state layout (follow the project’s conditional migration policy)."
       ]
     },
     {
-      "id": "REQ-71",
-      "text": "Backend-only: Extend `backend/main.mo` with a new Partner Wallet module including wallet and withdrawal-request data models and storage, ensuring `getMyWallet` is zero-safe and never traps for missing wallets.",
-      "target": "backend",
+      "id": "REQ-112",
+      "text": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "MODULE 3 — PARTNER WALLET (BALANCE & WITHDRAW)",
-          "Create PartnerWallet... Storage...",
-          "- getMyWallet() -> PartnerWallet (PARTNER only; if not exists return zeroed wallet)",
-          "- requestWithdraw(...) -> () (PARTNER only) Withdrawal status tracking minimal: status : \"PENDING\" | \"APPROVED\" | \"REJECTED\"",
-          "- approveWithdraw(requestId) -> () (ADMIN / SUPERADMIN)",
-          "Wallet must exist even if balance = 0."
+          "Build Client Service Request (Permintaan Layanan) UI + minimal backend support.\nClient hanya mengajukan permintaan.\nAsistenmu (AM) menentukan jumlah layanan & konfirmasi via WhatsApp."
         ]
       },
       "acceptanceCriteria": [
-        "Define `PartnerWallet` with exactly: `partnerId: Text`, `balanceIdr: Nat`, `totalPaidOutIdr: Nat`.",
-        "Add storage map: `walletByPartnerId : Map<Text, PartnerWallet>`.",
-        "Add a minimal withdrawal request model that includes at least: `requestId: Text`, `partnerId: Text`, `amountIdr: Nat`, `bankName: Text`, `accountNumber: Text`, `accountName: Text`, `status: Text` (\"PENDING\"|\"APPROVED\"|\"REJECTED\"), plus timestamps if needed for safe bookkeeping.",
-        "Add storage for withdrawal requests so `approveWithdraw(requestId)` can locate and update a request deterministically (e.g., `withdrawRequestsById` plus an optional index by partner).",
-        "Expose `getMyWallet() : async PartnerWallet` callable by PARTNER only; if no wallet exists, return `{ partnerId=<callerPartnerId>; balanceIdr=0; totalPaidOutIdr=0 }` and do not trap.",
-        "Expose `requestWithdraw(amountIdr: Nat, bankName: Text, accountNumber: Text, accountName: Text) : async ()` callable by PARTNER only; it creates a withdrawal request with initial status \"PENDING\" (no auto approval).",
-        "Expose `approveWithdraw(requestId: Text) : async ()` callable by ADMIN or SUPERADMIN only; it updates the withdrawal request status to \"APPROVED\" and applies minimal bookkeeping consistently (placeholder payout is allowed).",
-        "All wallet-related reads are empty-safe and do not trap due to missing wallet/request data; no background/automatic payout actions are introduced."
+        "A new React Query mutation exists to call the backend task creation method with parameters: title, description, requestType, and optional clientDeadline.",
+        "A new React Query query exists to fetch the client’s tasks/requests via the backend client-safe list endpoint (e.g., `getMyClientTasks`).",
+        "Hooks do not run on protected-page mount before AccessGate verification completes (no lifecycle auto calls that would violate the existing guard pattern).",
+        "Technical errors are shown in English (consistent with existing toast/error patterns)."
       ]
     },
     {
-      "id": "REQ-72",
-      "text": "Backend-only: Implement Financial Summary aggregation and endpoint for SUPERADMIN with fully empty-safe 0/empty-map outputs when services/wallets are absent.",
-      "target": "backend",
+      "id": "REQ-113",
+      "text": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "MODULE 4 — FINANCIAL SUMMARY (SUPERADMIN VIEW)",
-          "Compute: totalGmvAllTime = sum(priceIdr of all services) ... totalPartnerPayout = sum(totalPaidOutIdr of all wallets) grossMargin = totalGmvAllTime - totalPartnerPayout",
-          "ENDPOINT - getFinancialSummary() -> {...} (SUPERADMIN only)",
-          "SAFETY - If wallet/task not implemented yet → payout = 0. - Never trap. Return 0s."
+          "CLIENT UI — FORM PERMINTAAN LAYANAN\n\nForm Fields:\n1. Judul Permintaan (Text, required)\n2. Deskripsi Permintaan (Textarea, required)\n\n3. Tipe Permintaan (requestType) — Radio / Segmented Control\n   Options:\n   - NORMAL\n   - PRIORITY\n   - URGENT\n\n4. Deadline dari Client (optional, date input)\n\nCLIENT — LIST PERMINTAAN\n\nDisplay badge based on requestType:\n- NORMAL   → \"Normal\"\n- PRIORITY → \"Prioritas\"\n- URGENT   → \"Urgent\"\n\nDefault status shown:\nREQUESTED"
         ]
       },
       "acceptanceCriteria": [
-        "Expose `getFinancialSummary() : async { totalGmvAllTime : Nat; totalGmvActive : Nat; gmvByPackageAll : Map<Text, Nat>; totalPartnerPayout : Nat; grossMargin : Nat }` callable by SUPERADMIN only.",
-        "`totalGmvAllTime` equals the sum of `priceIdr` across all services.",
-        "`totalGmvActive` equals the sum of `priceIdr` across services where `status == \"ACTIVE\"`.",
-        "`gmvByPackageAll` equals sums by `packageName` across all services ignoring status.",
-        "`totalPartnerPayout` equals the sum of `totalPaidOutIdr` across all wallets; if there are no wallets, it is 0.",
-        "`grossMargin` equals `totalGmvAllTime - totalPartnerPayout` using Nat-safe arithmetic (must not trap).",
-        "If there are no services and/or no wallets, the function returns 0 for all Nat fields and an empty map for `gmvByPackageAll`; it never traps due to missing data."
+        "The Client workspace (`/client`, ClientDashboardPage) includes a clearly accessible section/tab for submitting and viewing service requests without removing existing tabs.",
+        "The request form includes required fields: Title (text) and Description (textarea), a required requestType selection with three options (NORMAL/PRIORITY/URGENT), and an optional client deadline date input.",
+        "Under the form, an info note is always visible (in English) communicating that estimates are guidance and final schedule/quantity will be confirmed by Asistenmu.",
+        "The list renders safely when empty and displays for each request at minimum: Title, requestType badge text (Normal/Priority/Urgent), and status text \"REQUESTED\".",
+        "No pricing fields are displayed anywhere in this client request UI."
+      ]
+    },
+    {
+      "id": "REQ-114",
+      "text": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "CTA Button:\n\"Kirim Permintaan\"\n\nOn Submit:\n- Do NOT auto redirect\n- Show success message:\n  \"Permintaan kamu sudah dikirim. Asistenmu akan menghubungi via WhatsApp.\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "Submitting the form does not navigate away from `/client` and does not auto-switch routes after success.",
+        "After success, the UI shows an English success message exactly: \"Your request has been sent. Asistenmu will contact you via WhatsApp.\"",
+        "After success, the form either resets to blank or remains filled but clearly indicates success (either behavior is acceptable as long as there is no redirect).",
+        "After success, the client request list refreshes via React Query invalidation/refetch without a full page reload.",
+        "On error, an English technical error toast/message is shown and the form remains usable (no blank white screen)."
+      ]
+    },
+    {
+      "id": "REQ-115",
+      "text": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Options:\n   - NORMAL\n     Helper text:\n     \"Cocok untuk pekerjaan dengan waktu pengerjaan lebih dari 2 hari.\"\n\n   - PRIORITY\n     Helper text:\n     \"Cocok jika pekerjaan perlu diselesaikan dalam ±1 hari.\"\n\n   - URGENT\n     Helper text (highlight ringan):\n     \"Untuk kebutuhan mendesak, target < 12 jam.\n      Ketersediaan akan dikonfirmasi oleh Asistenmu.\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "The NORMAL option displays an English helper text conveying: suitable when completion time is more than 2 days.",
+        "The PRIORITY option displays an English helper text conveying: suitable when the work should be completed in about 1 day.",
+        "The URGENT option displays an English helper text conveying: for urgent needs with a target under 12 hours and availability will be confirmed by Asistenmu.",
+        "The URGENT helper text is visually emphasized in a subtle, calm way (e.g., slightly different background/border), without changing the global theme or introducing aggressive colors."
+      ]
+    },
+    {
+      "id": "REQ-116",
+      "text": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Use English for any user-facing text in the build request."
+        ]
+      },
+      "acceptanceCriteria": [
+        "New UI labels/messages for the Service Request feature are surfaced via `t(key, locale)` and added to `frontend/src/lib/i18n.ts` for both `en` and `id` locales.",
+        "All technical errors (backend trap messages, exception `.message`, etc.) remain in English and are not passed through translation.",
+        "No role/status/requestType comparisons or branching depend on translated strings (e.g., no `if (t('...') === ...)`)."
       ]
     }
   ],
   "constraints": [
-    "Backend-only changes in `backend/main.mo` (single-actor). Do not modify frontend files, routing, guards, theme, or UI.",
-    "Do not change existing User/Role/ID logic or ID formats already in use (e.g., CA-XXXXXX, PA-XXXXXX, existing internal user IDs).",
-    "Extend-only: do not redesign or replace existing models/maps; add new models and maps alongside existing state.",
-    "All list/query endpoints must be empty-safe: return `[]` or `0` for empty/missing data and must not trap due to missing map entries.",
-    "No automatic actions, background triggers, or implicit transitions; all state changes must be initiated by explicit endpoint calls.",
-    "New data structures must remain compatible with the current `main.mo` userProfiles and role authorization approach (using stored caller profile role)."
+    "Backend must remain a single Motoko actor; do not introduce additional backend services.",
+    "Only create/update backend/migration.mo if required by an upgrade of existing stable state (conditional migration policy).",
+    "Do not edit any frontend files under immutablePaths; compose UI using existing shared components instead.",
+    "Do not add any automation around layanan consumption/locking, task auto-assignment, or auto status transitions beyond setting status REQUESTED on create.",
+    "Do not introduce any auto-redirect after request submission."
   ],
   "nonGoals": [
-    "Any frontend implementation (pages, hooks, React Query wiring, UI panels) for Services/Tasks/Wallet/Summary.",
-    "Changing or expanding the existing user profile schema, role list, role normalization rules, or user status lifecycle beyond what already exists.",
-    "Implementing real-world bank payout integrations or external payment rails.",
-    "Implementing automatic task assignment, automatic status transitions, or scheduled processing of withdrawals."
+    "Building Asistenmu-side workflow screens for reviewing/approving requests (beyond existing WhatsApp confirmation as an external process).",
+    "Implementing service quantity selection, consumption, or billing logic for client requests.",
+    "Adding notifications, real-time updates, or WhatsApp API integration."
   ],
   "imageRequirements": {
     "required": [],

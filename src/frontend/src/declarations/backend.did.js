@@ -29,6 +29,12 @@ export const FinancialPartnerData = IDL.Record({
   'totalEarnings' : IDL.Nat,
   'withdrawn' : IDL.Nat,
 });
+export const LayananKind = IDL.Variant({
+  'JAGA' : IDL.Null,
+  'RAPI' : IDL.Null,
+  'FOKUS' : IDL.Null,
+  'TENANG' : IDL.Null,
+});
 export const Status = IDL.Variant({
   'outdated' : IDL.Null,
   'review' : IDL.Null,
@@ -60,6 +66,11 @@ export const Service = IDL.Record({
   'price' : IDL.Nat,
   'estimatedTime' : IDL.Text,
   'detailedInformation' : IDL.Text,
+});
+export const RequestType = IDL.Variant({
+  'PRIORITY' : IDL.Null,
+  'URGENT' : IDL.Null,
+  'NORMAL' : IDL.Null,
 });
 export const PaymentStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -120,6 +131,12 @@ export const UserStatus = IDL.Variant({
   'suspended' : IDL.Null,
   'blacklisted' : IDL.Null,
 });
+export const AsistenmuCandidateDTO = IDL.Record({
+  'status' : UserStatus,
+  'name' : IDL.Text,
+  'role' : IDL.Text,
+  'principalId' : IDL.Text,
+});
 export const PartnerRegistrationData = IDL.Record({
   'name' : IDL.Text,
   'whatsapp' : IDL.Text,
@@ -153,21 +170,108 @@ export const FinancialSummary = IDL.Record({
   'completedTransactions' : IDL.Nat,
   'totalTransactionAmount' : IDL.Nat,
 });
+export const LayananStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'expired' : IDL.Null,
+  'inactive' : IDL.Null,
+});
+export const ExtendedLayanankuRecord = IDL.Record({
+  'id' : IDL.Text,
+  'status' : LayananStatus,
+  'clientId' : IDL.Text,
+  'startAt' : IDL.Nat,
+  'sharePrincipals' : IDL.Vec(IDL.Text),
+  'kind' : LayananKind,
+  'createdAt' : IDL.Nat,
+  'asistenmuName' : IDL.Opt(IDL.Text),
+  'endAt' : IDL.Nat,
+  'hargaPerLayanan' : IDL.Nat,
+  'updatedAt' : IDL.Nat,
+  'asistenmuPrincipalId' : IDL.Opt(IDL.Text),
+});
+export const LayanankuRecord = IDL.Record({
+  'id' : IDL.Text,
+  'status' : LayananStatus,
+  'clientId' : IDL.Text,
+  'startAt' : IDL.Nat,
+  'sharePrincipals' : IDL.Vec(IDL.Text),
+  'kind' : LayananKind,
+  'createdAt' : IDL.Nat,
+  'endAt' : IDL.Nat,
+  'hargaPerLayanan' : IDL.Nat,
+  'updatedAt' : IDL.Nat,
+  'asistenmuPrincipalId' : IDL.Opt(IDL.Text),
+  'asistenmuNameSnapshot' : IDL.Opt(IDL.Text),
+});
+export const TaskStatusInternal = IDL.Variant({
+  'REQUESTED' : IDL.Null,
+  'REVISION' : IDL.Null,
+  'DONE' : IDL.Null,
+  'IN_PROGRESS' : IDL.Null,
+  'QA_ASISTENMU' : IDL.Null,
+});
+export const TaskRecord = IDL.Record({
+  'statusInternal' : TaskStatusInternal,
+  'title' : IDL.Text,
+  'clientId' : IDL.Text,
+  'internalDeadline' : IDL.Opt(IDL.Nat),
+  'assignedPartnerId' : IDL.Opt(IDL.Text),
+  'createdAt' : IDL.Nat,
+  'description' : IDL.Text,
+  'assignedAsistenmuName' : IDL.Text,
+  'updatedAt' : IDL.Nat,
+  'taskId' : IDL.Text,
+  'createdByPrincipal' : IDL.Principal,
+  'requestType' : RequestType,
+  'clientDeadline' : IDL.Opt(IDL.Nat),
+});
+export const LayanankuPublic = IDL.Record({
+  'id' : IDL.Text,
+  'status' : LayananStatus,
+  'startAt' : IDL.Nat,
+  'sharePrincipals' : IDL.Vec(IDL.Text),
+  'kind' : LayananKind,
+  'createdAt' : IDL.Nat,
+  'endAt' : IDL.Nat,
+  'updatedAt' : IDL.Nat,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'assignAsistenmuToLayananku' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignTaskToPartner' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(IDL.Nat), IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
   'claimSuperadmin' : IDL.Func([], [IDL.Text], []),
   'createFinancialPartnerData' : IDL.Func([FinancialPartnerData], [], []),
+  'createLayanankuForClient' : IDL.Func(
+      [IDL.Text, LayananKind, IDL.Nat, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
+      [IDL.Text],
+      [],
+    ),
   'createService' : IDL.Func([Service], [], []),
-  'createTask' : IDL.Func([Task], [], []),
+  'createTask' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(IDL.Nat), RequestType],
+      [IDL.Text],
+      [],
+    ),
+  'createTaskLegacy' : IDL.Func([Task], [], []),
+  'deactivateLayananku' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'getAllFinancialPartnerData' : IDL.Func(
       [],
       [IDL.Vec(FinancialPartnerData)],
       ['query'],
     ),
   'getAllServices' : IDL.Func([], [IDL.Vec(Service)], ['query']),
-  'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+  'getAllTasksLegacy' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+  'getAsistenmuCandidates' : IDL.Func(
+      [],
+      [IDL.Vec(AsistenmuCandidateDTO)],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getDefaultPartnerProfile' : IDL.Func([], [UserProfile], ['query']),
@@ -177,12 +281,28 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getFinancialSummary' : IDL.Func([], [FinancialSummary], ['query']),
+  'getLayanankuForClient' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(ExtendedLayanankuRecord)],
+      ['query'],
+    ),
+  'getLayanankuInternal' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(LayanankuRecord)],
+      ['query'],
+    ),
+  'getMyClientTasks' : IDL.Func([], [IDL.Vec(TaskRecord)], ['query']),
+  'getMyLayananku' : IDL.Func([], [IDL.Vec(LayanankuPublic)], ['query']),
+  'getMyPartnerTasks' : IDL.Func([], [IDL.Vec(TaskRecord)], ['query']),
   'getMyWallet' : IDL.Func([], [FinancialPartnerData], ['query']),
   'getServiceById' : IDL.Func([IDL.Text], [IDL.Opt(Service)], ['query']),
-  'getTaskById' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
+  'getTaskById' : IDL.Func([IDL.Text], [IDL.Opt(TaskRecord)], ['query']),
+  'getTaskLegacy' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
   'getUserProfile' : IDL.Func([IDL.Text], [IDL.Opt(UserProfile)], ['query']),
+  'hasActiveLayananku' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isValidRoleName' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'myHasActiveLayananku' : IDL.Func([], [IDL.Bool], ['query']),
   'registerClient' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [IDL.Text],
@@ -199,6 +319,12 @@ export const idlService = IDL.Service({
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setTaskStatus' : IDL.Func([IDL.Text, TaskStatusInternal], [IDL.Bool], []),
+  'updateLayanankuShare' : IDL.Func(
+      [IDL.Text, IDL.Vec(IDL.Text)],
+      [IDL.Bool],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -224,6 +350,12 @@ export const idlFactory = ({ IDL }) => {
     'bonus' : IDL.Nat,
     'totalEarnings' : IDL.Nat,
     'withdrawn' : IDL.Nat,
+  });
+  const LayananKind = IDL.Variant({
+    'JAGA' : IDL.Null,
+    'RAPI' : IDL.Null,
+    'FOKUS' : IDL.Null,
+    'TENANG' : IDL.Null,
   });
   const Status = IDL.Variant({
     'outdated' : IDL.Null,
@@ -256,6 +388,11 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Nat,
     'estimatedTime' : IDL.Text,
     'detailedInformation' : IDL.Text,
+  });
+  const RequestType = IDL.Variant({
+    'PRIORITY' : IDL.Null,
+    'URGENT' : IDL.Null,
+    'NORMAL' : IDL.Null,
   });
   const PaymentStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -316,6 +453,12 @@ export const idlFactory = ({ IDL }) => {
     'suspended' : IDL.Null,
     'blacklisted' : IDL.Null,
   });
+  const AsistenmuCandidateDTO = IDL.Record({
+    'status' : UserStatus,
+    'name' : IDL.Text,
+    'role' : IDL.Text,
+    'principalId' : IDL.Text,
+  });
   const PartnerRegistrationData = IDL.Record({
     'name' : IDL.Text,
     'whatsapp' : IDL.Text,
@@ -349,21 +492,112 @@ export const idlFactory = ({ IDL }) => {
     'completedTransactions' : IDL.Nat,
     'totalTransactionAmount' : IDL.Nat,
   });
+  const LayananStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'expired' : IDL.Null,
+    'inactive' : IDL.Null,
+  });
+  const ExtendedLayanankuRecord = IDL.Record({
+    'id' : IDL.Text,
+    'status' : LayananStatus,
+    'clientId' : IDL.Text,
+    'startAt' : IDL.Nat,
+    'sharePrincipals' : IDL.Vec(IDL.Text),
+    'kind' : LayananKind,
+    'createdAt' : IDL.Nat,
+    'asistenmuName' : IDL.Opt(IDL.Text),
+    'endAt' : IDL.Nat,
+    'hargaPerLayanan' : IDL.Nat,
+    'updatedAt' : IDL.Nat,
+    'asistenmuPrincipalId' : IDL.Opt(IDL.Text),
+  });
+  const LayanankuRecord = IDL.Record({
+    'id' : IDL.Text,
+    'status' : LayananStatus,
+    'clientId' : IDL.Text,
+    'startAt' : IDL.Nat,
+    'sharePrincipals' : IDL.Vec(IDL.Text),
+    'kind' : LayananKind,
+    'createdAt' : IDL.Nat,
+    'endAt' : IDL.Nat,
+    'hargaPerLayanan' : IDL.Nat,
+    'updatedAt' : IDL.Nat,
+    'asistenmuPrincipalId' : IDL.Opt(IDL.Text),
+    'asistenmuNameSnapshot' : IDL.Opt(IDL.Text),
+  });
+  const TaskStatusInternal = IDL.Variant({
+    'REQUESTED' : IDL.Null,
+    'REVISION' : IDL.Null,
+    'DONE' : IDL.Null,
+    'IN_PROGRESS' : IDL.Null,
+    'QA_ASISTENMU' : IDL.Null,
+  });
+  const TaskRecord = IDL.Record({
+    'statusInternal' : TaskStatusInternal,
+    'title' : IDL.Text,
+    'clientId' : IDL.Text,
+    'internalDeadline' : IDL.Opt(IDL.Nat),
+    'assignedPartnerId' : IDL.Opt(IDL.Text),
+    'createdAt' : IDL.Nat,
+    'description' : IDL.Text,
+    'assignedAsistenmuName' : IDL.Text,
+    'updatedAt' : IDL.Nat,
+    'taskId' : IDL.Text,
+    'createdByPrincipal' : IDL.Principal,
+    'requestType' : RequestType,
+    'clientDeadline' : IDL.Opt(IDL.Nat),
+  });
+  const LayanankuPublic = IDL.Record({
+    'id' : IDL.Text,
+    'status' : LayananStatus,
+    'startAt' : IDL.Nat,
+    'sharePrincipals' : IDL.Vec(IDL.Text),
+    'kind' : LayananKind,
+    'createdAt' : IDL.Nat,
+    'endAt' : IDL.Nat,
+    'updatedAt' : IDL.Nat,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'assignAsistenmuToLayananku' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignTaskToPartner' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Opt(IDL.Nat), IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'claimSuperadmin' : IDL.Func([], [IDL.Text], []),
     'createFinancialPartnerData' : IDL.Func([FinancialPartnerData], [], []),
+    'createLayanankuForClient' : IDL.Func(
+        [IDL.Text, LayananKind, IDL.Nat, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
+        [IDL.Text],
+        [],
+      ),
     'createService' : IDL.Func([Service], [], []),
-    'createTask' : IDL.Func([Task], [], []),
+    'createTask' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Opt(IDL.Nat), RequestType],
+        [IDL.Text],
+        [],
+      ),
+    'createTaskLegacy' : IDL.Func([Task], [], []),
+    'deactivateLayananku' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'getAllFinancialPartnerData' : IDL.Func(
         [],
         [IDL.Vec(FinancialPartnerData)],
         ['query'],
       ),
     'getAllServices' : IDL.Func([], [IDL.Vec(Service)], ['query']),
-    'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+    'getAllTasksLegacy' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+    'getAsistenmuCandidates' : IDL.Func(
+        [],
+        [IDL.Vec(AsistenmuCandidateDTO)],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getDefaultPartnerProfile' : IDL.Func([], [UserProfile], ['query']),
@@ -373,12 +607,28 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getFinancialSummary' : IDL.Func([], [FinancialSummary], ['query']),
+    'getLayanankuForClient' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(ExtendedLayanankuRecord)],
+        ['query'],
+      ),
+    'getLayanankuInternal' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(LayanankuRecord)],
+        ['query'],
+      ),
+    'getMyClientTasks' : IDL.Func([], [IDL.Vec(TaskRecord)], ['query']),
+    'getMyLayananku' : IDL.Func([], [IDL.Vec(LayanankuPublic)], ['query']),
+    'getMyPartnerTasks' : IDL.Func([], [IDL.Vec(TaskRecord)], ['query']),
     'getMyWallet' : IDL.Func([], [FinancialPartnerData], ['query']),
     'getServiceById' : IDL.Func([IDL.Text], [IDL.Opt(Service)], ['query']),
-    'getTaskById' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
+    'getTaskById' : IDL.Func([IDL.Text], [IDL.Opt(TaskRecord)], ['query']),
+    'getTaskLegacy' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
     'getUserProfile' : IDL.Func([IDL.Text], [IDL.Opt(UserProfile)], ['query']),
+    'hasActiveLayananku' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isValidRoleName' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'myHasActiveLayananku' : IDL.Func([], [IDL.Bool], ['query']),
     'registerClient' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [IDL.Text],
@@ -395,6 +645,12 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setTaskStatus' : IDL.Func([IDL.Text, TaskStatusInternal], [IDL.Bool], []),
+    'updateLayanankuShare' : IDL.Func(
+        [IDL.Text, IDL.Vec(IDL.Text)],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

@@ -1,56 +1,100 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T06:04:41.342Z",
+  "generatedAt": "2026-02-07T15:15:23.641Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 0,
+    "total": 8,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-67",
-        "summary": "Backend-only: Extend `backend/main.mo` with a new Services module that introduces the Service data model and storage indexes, without changing any existing User/Role/ID logic or existing userProfiles maps.",
+        "id": "REQ-109",
+        "summary": "Extend the backend Minimal Task record to store a client request priority field `requestType : Text` with allowed values exactly: \"NORMAL\", \"PRIORITY\", \"URGENT\".",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-68",
-        "summary": "Backend-only: Implement Services endpoints with explicit, role-based authorization rules and empty-safe reads.",
+        "id": "REQ-110",
+        "summary": "Update the backend client task creation endpoint to accept and persist `requestType`, while keeping the global rules: client does not set/consume layanan quantities; created tasks must always start in REQUESTED status; and there must be no auto-redirect or automation triggered by backend writes.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-69",
-        "summary": "Backend-only: Extend `backend/main.mo` with a new Tasks module that introduces the Task data model and storage indexes, without changing any existing User/Role/ID logic.",
+        "id": "REQ-111",
+        "summary": "Ensure backward compatibility for any existing stored Minimal Task records by safely defaulting missing `requestType` to \"NORMAL\" during read and/or by performing a conditional state migration on upgrade.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-70",
-        "summary": "Backend-only: Implement Tasks endpoints with explicit-only behavior (no auto assignment/transitions) and empty-safe reads. `createTask` must require an ACTIVE service and trap with a clear message when blocked.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-112",
+        "summary": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useClientServiceRequests.ts",
+          "frontend/src/pages/client/ClientDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useClientServiceRequests.ts",
+          "frontend/src/pages/client/ClientDashboardPage.tsx"
+        ]
       },
       {
-        "id": "REQ-71",
-        "summary": "Backend-only: Extend `backend/main.mo` with a new Partner Wallet module including wallet and withdrawal-request data models and storage, ensuring `getMyWallet` is zero-safe and never traps for missing wallets.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-113",
+        "summary": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "frontend/src/pages/client/ClientDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "frontend/src/pages/client/ClientDashboardPage.tsx"
+        ]
       },
       {
-        "id": "REQ-72",
-        "summary": "Backend-only: Implement Financial Summary aggregation and endpoint for SUPERADMIN with fully empty-safe 0/empty-map outputs when services/wallets are absent.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-114",
+        "summary": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useClientServiceRequests.ts",
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useClientServiceRequests.ts",
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-115",
+        "summary": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-116",
+        "summary": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/i18n.ts",
+          "frontend/src/pages/client/ClientDashboardPage.tsx",
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/i18n.ts",
+          "frontend/src/pages/client/ClientDashboardPage.tsx",
+          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+        ]
       }
     ]
   },
@@ -63,8 +107,12 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/client/ClientServiceRequestTab.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useClientServiceRequests.ts",
+    "frontend/src/lib/i18n.ts",
+    "frontend/src/pages/client/ClientDashboardPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

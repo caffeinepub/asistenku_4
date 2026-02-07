@@ -1,6 +1,118 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Backend-only Asistenku core modules: no frontend changes required",
-  "requirements": []
+  "title": "Client Service Request UI (requestType) – frontend hooks, dashboard tab, i18n",
+  "requirements": [
+    {
+      "id": "REQ-112",
+      "summary": "Add React Query hooks for creating a client service request and listing the caller’s submitted requests, following existing actor readiness and error handling patterns.",
+      "acceptanceCriteria": [
+        "A new React Query mutation exists to call the backend task creation method with parameters: title, description, requestType, and optional clientDeadline.",
+        "A new React Query query exists to fetch the client’s tasks/requests via the backend client-safe list endpoint (e.g., `getMyClientTasks`).",
+        "Hooks do not run on protected-page mount before AccessGate verification completes (no lifecycle auto calls that would violate the existing guard pattern).",
+        "Technical errors are shown in English (consistent with existing toast/error patterns)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useClientServiceRequests.ts",
+          "operation": "create",
+          "description": "Create client service request hooks using TanStack React Query + existing useActor readiness pattern: (1) a mutation that calls the backend createTask capability with title/description/clientDeadline/requestType; (2) a query that lists the caller’s tasks via getMyClientTasks. Ensure errors are surfaced as English technical messages consistent with existing toast/error handling patterns. Use the authorization component patterns indirectly by depending on AccessGate (hooks are only used inside verified pages). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/client/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Wire the new hooks into the existing /client workspace by mounting the Service Request tab content only under AccessGate-verified children (so queries/mutations do not run before verification). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-113",
+      "summary": "Add a new “Service Request” section/tab within the existing /client dashboard containing a request form and a list of submitted requests with requestType badges and REQUESTED status.",
+      "acceptanceCriteria": [
+        "The Client workspace (`/client`, ClientDashboardPage) includes a clearly accessible section/tab for submitting and viewing service requests without removing existing tabs.",
+        "The request form includes required fields: Title (text) and Description (textarea), a required requestType selection with three options (NORMAL/PRIORITY/URGENT), and an optional client deadline date input.",
+        "Under the form, an info note is always visible (in English) communicating that estimates are guidance and final schedule/quantity will be confirmed by Asistenmu.",
+        "The list renders safely when empty and displays for each request at minimum: Title, requestType badge text (Normal/Priority/Urgent), and status text \"REQUESTED\".",
+        "No pricing fields are displayed anywhere in this client request UI."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "operation": "create",
+          "description": "Create a client dashboard tab view that contains: (1) a service request form (Title, Description, Request Type selector with 3 options, optional Deadline date input) and (2) a list rendering the caller’s submitted requests from the new query hook. Use shadcn-ui building blocks already used elsewhere (e.g., Card, Button, Tabs-style layout primitives) to match existing UI patterns, and show requestType as a badge-like label text (Normal/Priority/Urgent) plus status text \"REQUESTED\". Ensure empty list state is safe and clear. Do not display any pricing fields. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/client/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add a new TabsTrigger/TabsContent entry for “Service Request” inside the existing /client Tabs without removing existing tabs, and render ClientServiceRequestTab within it. Adjust tab layout (e.g., columns) to accommodate the new tab while keeping existing tabs accessible. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-114",
+      "summary": "Keep the client on /client after submission, show an English success message on success, and show a non-crashing English technical error on failure while keeping UI visible.",
+      "acceptanceCriteria": [
+        "Submitting the form does not navigate away from `/client` and does not auto-switch routes after success.",
+        "After success, the UI shows an English success message exactly: \"Your request has been sent. Asistenmu will contact you via WhatsApp.\"",
+        "After success, the form either resets to blank or remains filled but clearly indicates success (either behavior is acceptable as long as there is no redirect).",
+        "After success, the client request list refreshes via React Query invalidation/refetch without a full page reload.",
+        "On error, an English technical error toast/message is shown and the form remains usable (no blank white screen)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useClientServiceRequests.ts",
+          "operation": "modify",
+          "description": "Ensure the create-service-request mutation triggers React Query invalidation/refetch for the client tasks list query key on success, and exposes error information suitable for English technical toasts/messages on failure. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "operation": "modify",
+          "description": "Implement submit UX: no navigation/redirect, show success message exactly \"Your request has been sent. Asistenmu will contact you via WhatsApp.\", and keep the UI visible on error with an English technical toast/message. After success, reset form or clearly indicate success and refresh the list via query invalidation/refetch (no full reload). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-115",
+      "summary": "Display English helper texts for each requestType option, with a subtly emphasized URGENT note.",
+      "acceptanceCriteria": [
+        "The NORMAL option displays an English helper text conveying: suitable when completion time is more than 2 days.",
+        "The PRIORITY option displays an English helper text conveying: suitable when the work should be completed in about 1 day.",
+        "The URGENT option displays an English helper text conveying: for urgent needs with a target under 12 hours and availability will be confirmed by Asistenmu.",
+        "The URGENT helper text is visually emphasized in a subtle, calm way (e.g., slightly different background/border), without changing the global theme or introducing aggressive colors."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "operation": "modify",
+          "description": "Add helper texts under each requestType option in English and apply subtle visual emphasis to the URGENT helper text using existing theme tokens/classes (e.g., muted background/border) without altering global theme or using aggressive colors. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-116",
+      "summary": "Add Service Request UI copy to the existing i18n system (EN/ID) while keeping all technical errors in English and avoiding translated strings in logic.",
+      "acceptanceCriteria": [
+        "New UI labels/messages for the Service Request feature are surfaced via `t(key, locale)` and added to `frontend/src/lib/i18n.ts` for both `en` and `id` locales.",
+        "All technical errors (backend trap messages, exception `.message`, etc.) remain in English and are not passed through translation.",
+        "No role/status/requestType comparisons or branching depend on translated strings (e.g., no `if (t('...') === ...)`)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/i18n.ts",
+          "operation": "modify",
+          "description": "Add new translation keys (EN/ID) for the client Service Request tab label, form labels, helper texts, info note, CTA label, success message (English exact copy), and empty-state text. Ensure UI uses t(key, locale) for labels/messages, while technical/backend errors remain in English and are never translated or used for branching. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/client/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Replace any new Service Request tab UI strings with i18n translation keys via t(key, locale). Do not use translated strings for any requestType/status comparisons; comparisons must use backend enum values (e.g., RequestType, statusInternal) or normalized constants. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/client/ClientServiceRequestTab.tsx",
+          "operation": "modify",
+          "description": "Use i18n keys for all new Service Request UI labels/messages (including helper texts and info note). Keep technical error content in English (use error.message directly for toasts/messages) and avoid any logic branching on translated strings. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
 }

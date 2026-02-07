@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import AccessDeniedScreen from '@/components/AccessDeniedScreen';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
 
@@ -38,6 +39,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
     const [isVerified, setIsVerified] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [userStatus, setUserStatus] = useState<string | null>(null);
+    const [showAccessDenied, setShowAccessDenied] = useState(false);
 
     const isActorReady = !!actor && !actorFetching;
 
@@ -56,7 +58,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
             // Check if user profile exists
             if (!user) {
                 if (isInternal) {
-                    navigate({ to: '/internal/role-mismatch' });
+                    setShowAccessDenied(true);
                 } else {
                     setErrorMessage(t('public_mismatch_ui', locale));
                 }
@@ -70,7 +72,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
             // Check if role matches
             if (userRoleNormalized !== requiredRoleNormalized) {
                 if (isInternal) {
-                    navigate({ to: '/internal/role-mismatch' });
+                    setShowAccessDenied(true);
                 } else {
                     setErrorMessage(t('public_mismatch_ui', locale));
                 }
@@ -80,7 +82,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
             // Check if status is valid (allow both active and pending)
             if (!isValidStatus(user.status)) {
                 if (isInternal) {
-                    navigate({ to: '/internal/role-mismatch' });
+                    setShowAccessDenied(true);
                 } else {
                     setErrorMessage(t('public_mismatch_ui', locale));
                 }
@@ -98,7 +100,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
                 setErrorMessage('Backend connection not ready. Please try again.');
             } else {
                 if (isInternal) {
-                    navigate({ to: '/internal/role-mismatch' });
+                    setShowAccessDenied(true);
                 } else {
                     setErrorMessage(t('public_mismatch_ui', locale));
                 }
@@ -107,6 +109,10 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
             setIsVerifying(false);
         }
     };
+
+    if (showAccessDenied) {
+        return <AccessDeniedScreen />;
+    }
 
     if (isVerified) {
         return (
@@ -138,7 +144,9 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
                     {!isActorReady && (
                         <Alert>
                             <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>Connecting to backend... Please wait.</AlertDescription>
+                            <AlertDescription>
+                                Connecting to backend...
+                            </AlertDescription>
                         </Alert>
                     )}
 
@@ -153,17 +161,8 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
                         onClick={handleVerify}
                         disabled={!isActorReady || isVerifying}
                         className="w-full"
-                        size="lg"
                     >
                         {isVerifying ? 'Verifying...' : t('verify_and_open', locale)}
-                    </Button>
-
-                    <Button
-                        variant="outline"
-                        onClick={() => navigate({ to: isInternal ? '/internal/login' : '/login' })}
-                        className="w-full"
-                    >
-                        {t('back', locale)}
                     </Button>
                 </CardContent>
             </Card>

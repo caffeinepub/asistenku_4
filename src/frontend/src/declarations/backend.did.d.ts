@@ -10,11 +10,31 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AsistenmuCandidateDTO {
+  'status' : UserStatus,
+  'name' : string,
+  'role' : string,
+  'principalId' : string,
+}
 export interface ClientRegistrationData {
   'name' : string,
   'whatsapp' : string,
   'email' : string,
   'company' : string,
+}
+export interface ExtendedLayanankuRecord {
+  'id' : string,
+  'status' : LayananStatus,
+  'clientId' : string,
+  'startAt' : bigint,
+  'sharePrincipals' : Array<string>,
+  'kind' : LayananKind,
+  'createdAt' : bigint,
+  'asistenmuName' : [] | [string],
+  'endAt' : bigint,
+  'hargaPerLayanan' : bigint,
+  'updatedAt' : bigint,
+  'asistenmuPrincipalId' : [] | [string],
 }
 export interface FinancialPartnerData {
   'id' : string,
@@ -43,6 +63,37 @@ export interface InternalRegistrationData {
   'whatsapp' : string,
   'email' : string,
 }
+export type LayananKind = { 'JAGA' : null } |
+  { 'RAPI' : null } |
+  { 'FOKUS' : null } |
+  { 'TENANG' : null };
+export type LayananStatus = { 'active' : null } |
+  { 'expired' : null } |
+  { 'inactive' : null };
+export interface LayanankuPublic {
+  'id' : string,
+  'status' : LayananStatus,
+  'startAt' : bigint,
+  'sharePrincipals' : Array<string>,
+  'kind' : LayananKind,
+  'createdAt' : bigint,
+  'endAt' : bigint,
+  'updatedAt' : bigint,
+}
+export interface LayanankuRecord {
+  'id' : string,
+  'status' : LayananStatus,
+  'clientId' : string,
+  'startAt' : bigint,
+  'sharePrincipals' : Array<string>,
+  'kind' : LayananKind,
+  'createdAt' : bigint,
+  'endAt' : bigint,
+  'hargaPerLayanan' : bigint,
+  'updatedAt' : bigint,
+  'asistenmuPrincipalId' : [] | [string],
+  'asistenmuNameSnapshot' : [] | [string],
+}
 export interface PartnerRegistrationData {
   'name' : string,
   'whatsapp' : string,
@@ -56,6 +107,9 @@ export type PaymentStatus = { 'pending' : null } |
   { 'refunded' : null } |
   { 'unpaid' : null } |
   { 'partial' : null };
+export type RequestType = { 'PRIORITY' : null } |
+  { 'URGENT' : null } |
+  { 'NORMAL' : null };
 export interface Schedule {
   'startTime' : [] | [string],
   'allowsOvertime' : boolean,
@@ -123,12 +177,32 @@ export interface Task {
   'serviceReference' : string,
   'schedule' : Schedule,
 }
+export interface TaskRecord {
+  'statusInternal' : TaskStatusInternal,
+  'title' : string,
+  'clientId' : string,
+  'internalDeadline' : [] | [bigint],
+  'assignedPartnerId' : [] | [string],
+  'createdAt' : bigint,
+  'description' : string,
+  'assignedAsistenmuName' : string,
+  'updatedAt' : bigint,
+  'taskId' : string,
+  'createdByPrincipal' : Principal,
+  'requestType' : RequestType,
+  'clientDeadline' : [] | [bigint],
+}
 export type TaskStatus = { 'canceled' : null } |
   { 'open' : null } |
   { 'completed' : null } |
   { 'pendingForReview' : null } |
   { 'revising' : null } |
   { 'inProgress' : null };
+export type TaskStatusInternal = { 'REQUESTED' : null } |
+  { 'REVISION' : null } |
+  { 'DONE' : null } |
+  { 'IN_PROGRESS' : null } |
+  { 'QA_ASISTENMU' : null };
 export interface UserProfile {
   'id' : string,
   'status' : UserStatus,
@@ -147,14 +221,29 @@ export type UserStatus = { 'active' : null } |
   { 'blacklisted' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'assignAsistenmuToLayananku' : ActorMethod<[string, string], boolean>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignTaskToPartner' : ActorMethod<
+    [string, string, [] | [bigint], string],
+    boolean
+  >,
   'claimSuperadmin' : ActorMethod<[], string>,
   'createFinancialPartnerData' : ActorMethod<[FinancialPartnerData], undefined>,
+  'createLayanankuForClient' : ActorMethod<
+    [string, LayananKind, bigint, bigint, Array<string>, bigint],
+    string
+  >,
   'createService' : ActorMethod<[Service], undefined>,
-  'createTask' : ActorMethod<[Task], undefined>,
+  'createTask' : ActorMethod<
+    [string, string, [] | [bigint], RequestType],
+    string
+  >,
+  'createTaskLegacy' : ActorMethod<[Task], undefined>,
+  'deactivateLayananku' : ActorMethod<[string], boolean>,
   'getAllFinancialPartnerData' : ActorMethod<[], Array<FinancialPartnerData>>,
   'getAllServices' : ActorMethod<[], Array<Service>>,
-  'getAllTasks' : ActorMethod<[], Array<Task>>,
+  'getAllTasksLegacy' : ActorMethod<[], Array<Task>>,
+  'getAsistenmuCandidates' : ActorMethod<[], Array<AsistenmuCandidateDTO>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDefaultPartnerProfile' : ActorMethod<[], UserProfile>,
@@ -163,12 +252,23 @@ export interface _SERVICE {
     [] | [FinancialPartnerData]
   >,
   'getFinancialSummary' : ActorMethod<[], FinancialSummary>,
+  'getLayanankuForClient' : ActorMethod<
+    [string],
+    Array<ExtendedLayanankuRecord>
+  >,
+  'getLayanankuInternal' : ActorMethod<[string], [] | [LayanankuRecord]>,
+  'getMyClientTasks' : ActorMethod<[], Array<TaskRecord>>,
+  'getMyLayananku' : ActorMethod<[], Array<LayanankuPublic>>,
+  'getMyPartnerTasks' : ActorMethod<[], Array<TaskRecord>>,
   'getMyWallet' : ActorMethod<[], FinancialPartnerData>,
   'getServiceById' : ActorMethod<[string], [] | [Service]>,
-  'getTaskById' : ActorMethod<[string], [] | [Task]>,
+  'getTaskById' : ActorMethod<[string], [] | [TaskRecord]>,
+  'getTaskLegacy' : ActorMethod<[string], [] | [Task]>,
   'getUserProfile' : ActorMethod<[string], [] | [UserProfile]>,
+  'hasActiveLayananku' : ActorMethod<[string], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isValidRoleName' : ActorMethod<[string], boolean>,
+  'myHasActiveLayananku' : ActorMethod<[], boolean>,
   'registerClient' : ActorMethod<[string, string, string, string], string>,
   'registerInternalUser' : ActorMethod<
     [string, string, string, string],
@@ -179,6 +279,8 @@ export interface _SERVICE {
     string
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setTaskStatus' : ActorMethod<[string, TaskStatusInternal], boolean>,
+  'updateLayanankuShare' : ActorMethod<[string, Array<string>], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
