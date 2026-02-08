@@ -16,7 +16,7 @@ export default function InternalRoleMismatchPage() {
                         <AlertCircle className="h-16 w-16 text-destructive" />
                     </div>
                     <CardTitle>Role Mismatch</CardTitle>
-                    <CardDescription>Klik di Ruang kerja yang sesuai dengan bagian/role kamu</CardDescription>
+                    <CardDescription>Click the workspace that matches your department/role</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button onClick={() => navigate({ to: '/internal/login' })} className="w-full" size="lg">

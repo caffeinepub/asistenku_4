@@ -1,9 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import type { LayanankuPublic } from '@/backend';
+import { LayanankuPublic } from '@/hooks/useLayananku';
 
 interface LayananDetailModalProps {
-  layanan: LayanankuPublic & { asistenmuName?: string };
+  layanan: LayanankuPublic;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -23,41 +22,37 @@ export default function LayananDetailModal({ layanan, open, onOpenChange }: Laya
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Detail Layanan</DialogTitle>
+          <DialogTitle>Layanan Detail</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>ID Layanan</Label>
-            <p className="text-sm font-mono">{layanan.id}</p>
+            <p className="text-sm font-medium text-muted-foreground">ID Layanan</p>
+            <p className="font-mono text-sm">{layanan.id}</p>
           </div>
           <div>
-            <Label>Jenis</Label>
-            <p className="text-sm">{layanan.kind}</p>
+            <p className="text-sm font-medium text-muted-foreground">Jenis</p>
+            <p>{layanan.kind}</p>
           </div>
           <div>
-            <Label>Asistenmu</Label>
-            <p className="text-sm">{layanan.asistenmuName || '—'}</p>
+            <p className="text-sm font-medium text-muted-foreground">Status</p>
+            <p>{getStatusLabel(layanan.status)}</p>
           </div>
           <div>
-            <Label>Status</Label>
-            <p className="text-sm">{getStatusLabel(layanan.status)}</p>
+            <p className="text-sm font-medium text-muted-foreground">Masa Aktif</p>
+            <p>{formatDate(layanan.startAt)} – {formatDate(layanan.endAt)}</p>
           </div>
           <div>
-            <Label>Masa Aktif</Label>
-            <p className="text-sm">
-              {formatDate(layanan.startAt)} – {formatDate(layanan.endAt)}
-            </p>
-          </div>
-          <div>
-            <Label>Share Principals ({layanan.sharePrincipals.length}/6)</Label>
-            <div className="mt-2 space-y-1">
-              {layanan.sharePrincipals.map((principal, index) => (
-                <p key={index} className="text-xs font-mono bg-muted p-2 rounded">
-                  {principal}
-                </p>
-              ))}
+            <p className="text-sm font-medium text-muted-foreground">Share Principals ({layanan.sharePrincipals.length}/6)</p>
+            <div className="space-y-1 mt-2">
+              {layanan.sharePrincipals.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No shared principals</p>
+              ) : (
+                layanan.sharePrincipals.map((principal, index) => (
+                  <p key={index} className="font-mono text-xs break-all">{principal}</p>
+                ))
+              )}
             </div>
           </div>
         </div>

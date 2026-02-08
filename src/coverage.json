@@ -1,118 +1,84 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T15:15:23.641Z",
+  "generatedAt": "2026-02-08T19:34:07.933Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 5,
+    "total": 5,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-109",
-        "summary": "Extend the backend Minimal Task record to store a client request priority field `requestType : Text` with allowed values exactly: \"NORMAL\", \"PRIORITY\", \"URGENT\".",
+        "id": "REQ-1",
+        "summary": "Implement backend support for real internal access-code verification so that entering Code A routes to \"/internal/login\" (Asistenku masuk) and entering Code B routes to \"/internal/daftar\" (Asistenku daftar). The backend must reject any other code as invalid.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-110",
-        "summary": "Update the backend client task creation endpoint to accept and persist `requestType`, while keeping the global rules: client does not set/consume layanan quantities; created tasks must always start in REQUESTED status; and there must be no auto-redirect or automation triggered by backend writes.",
+        "id": "REQ-2",
+        "summary": "Add backend APIs for Superadmin to load/view the current internal access codes and their status, and to update/rotate/change Code A and Code B along with their status.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-111",
-        "summary": "Ensure backward compatibility for any existing stored Minimal Task records by safely defaulting missing `requestType` to \"NORMAL\" during read and/or by performing a conditional state migration on upgrade.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-112",
-        "summary": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+        "id": "REQ-3",
+        "summary": "Replace the mockResponse behavior in frontend InternalGatePage with real backend verification: submit the entered code to the backend and navigate to the backend-provided route only when verification succeeds; otherwise show an invalid-code error.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useClientServiceRequests.ts",
-          "frontend/src/pages/client/ClientDashboardPage.tsx"
+          "frontend/src/pages/InternalGatePage.tsx",
+          "frontend/src/hooks/useInternalAccessCodes.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useClientServiceRequests.ts",
-          "frontend/src/pages/client/ClientDashboardPage.tsx"
+          "frontend/src/pages/InternalGatePage.tsx",
+          "frontend/src/hooks/useInternalAccessCodes.ts"
         ]
       },
       {
-        "id": "REQ-113",
-        "summary": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+        "id": "REQ-4",
+        "summary": "Implement the Superadmin Dashboard \"Pengaturan\" tab content to load and display a list of all internal access codes (A and B) with their status, and provide controls for Superadmin to update the code values and statuses.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/client/ClientServiceRequestTab.tsx",
-          "frontend/src/pages/client/ClientDashboardPage.tsx"
+          "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+          "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/client/ClientServiceRequestTab.tsx",
-          "frontend/src/pages/client/ClientDashboardPage.tsx"
+          "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+          "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx"
         ]
       },
       {
-        "id": "REQ-114",
-        "summary": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+        "id": "REQ-5",
+        "summary": "Add/extend frontend React Query hooks to call the new backend APIs for verifying internal access codes and for Superadmin to fetch/update the internal access codes; ensure queries are invalidated/refetched after updates so the settings list stays current.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useClientServiceRequests.ts",
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+          "frontend/src/hooks/useInternalAccessCodes.ts",
+          "frontend/src/backend.d.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useClientServiceRequests.ts",
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-115",
-        "summary": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-116",
-        "summary": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/lib/i18n.ts",
-          "frontend/src/pages/client/ClientDashboardPage.tsx",
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/lib/i18n.ts",
-          "frontend/src/pages/client/ClientDashboardPage.tsx",
-          "frontend/src/components/client/ClientServiceRequestTab.tsx"
+          "frontend/src/hooks/useInternalAccessCodes.ts",
+          "frontend/src/backend.d.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/client/ClientServiceRequestTab.tsx",
+    "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useClientServiceRequests.ts",
-    "frontend/src/lib/i18n.ts",
-    "frontend/src/pages/client/ClientDashboardPage.tsx",
+    "frontend/src/hooks/useInternalAccessCodes.ts",
+    "frontend/src/pages/InternalGatePage.tsx",
+    "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

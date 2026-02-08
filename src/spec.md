@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add a Client “Service Request” flow to submit and view service request tasks with a selectable request priority (requestType), supported by a minimal backend TaskRecord update.
+**Goal:** Activate real internal access-code verification and enable Superadmin to view and update Code A & Code B (including status) from the Dashboard settings tab.
 
 **Planned changes:**
-- Backend: extend Minimal Task record to include `requestType : Text` with allowed values `NORMAL`, `PRIORITY`, `URGENT`, and ensure older stored tasks safely default to `NORMAL` when read (or migrate on upgrade if required).
-- Backend: update the client task creation endpoint to accept/persist `requestType`, validate it (reject invalid values with an English technical error), and always create tasks in `REQUESTED` status without mutating any service/layanan counters.
-- Frontend: add React Query hooks for creating a client request and listing the caller’s submitted requests, following existing actor readiness/access-guard patterns and English technical error handling.
-- Frontend: add a “Service Request” section/tab inside `/client` with a request form (title, description, requestType radios/segmented control with helper text, optional deadline) plus a list of submitted requests showing requestType badges and status `REQUESTED`, with no pricing fields.
-- Frontend: on submit success, do not redirect; show the exact English success message and refresh the list; on error, show a non-crashing English error state/toast.
-- Frontend: integrate new user-facing copy via the existing i18n system (EN/ID keys), while keeping technical/system/backend error strings in English and out of translation-based logic.
+- Backend: Add anonymous internal access-code verification that returns the route for Code A (`/internal/login`) and Code B (`/internal/daftar`), and rejects any other (or inactive) code as invalid.
+- Backend: Add SUPERADMIN-only APIs to fetch the current Code A/Code B values with status and last-updated timestamp, and to update/rotate both codes and their statuses.
+- Frontend: Replace the InternalGatePage mock verification with a real backend call; navigate only on success and show an invalid-code error otherwise (only set existing sessionStorage flags on success).
+- Frontend: Implement the Superadmin Dashboard “Pengaturan” tab to load and display Code A and Code B (value, status, last updated) and allow editing/saving, with loading + error states; all new user-facing text is in English.
+- Frontend: Add/extend React Query hooks for verify/fetch/update; ensure mutations invalidate/refetch so the settings view stays current.
 
-**User-visible outcome:** Clients can submit a service request (choosing Normal/Priority/Urgent and optionally a deadline) and see a list of their submitted requests with requestType badges and `REQUESTED` status, staying on the same `/client` page after submission.
+**User-visible outcome:** Users entering the correct internal access codes are routed to the correct internal login or registration page; Superadmins can view and update Code A and Code B (and enable/disable them) from the Dashboard “Pengaturan” tab.

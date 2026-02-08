@@ -1,23 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import CopyRow from '@/components/CopyRow';
-import LockedPanel from '@/components/LockedPanel';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
+import PartnerWorkTabs from '@/components/partner/work/PartnerWorkTabs';
+import PartnerWalletCard from '@/components/partner/income/PartnerWalletCard';
 import { useGetCallerUser } from '@/hooks/useQueries';
 import { UserStatus } from '@/backend';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
 
 function PartnerDashboardContent() {
+    const navigate = useNavigate();
     const { data: user } = useGetCallerUser();
     const { locale } = useLocale();
     const [activeMenu, setActiveMenu] = useState('ringkasan');
+
     const isPending = user?.status === UserStatus.pending;
+    const isSuspended = user?.status === UserStatus.suspended;
+    const isBlacklisted = user?.status === UserStatus.blacklisted;
+    const isLocked = isPending || isSuspended;
+
+    // Redirect to blocked page if blacklisted
+    useEffect(() => {
+        if (isBlacklisted) {
+            navigate({ to: '/partner/blocked' });
+        }
+    }, [isBlacklisted, navigate]);
 
     const MENU_ITEMS = [
         { label: t('menu_summary', locale), value: 'ringkasan' },
@@ -40,6 +53,15 @@ function PartnerDashboardContent() {
                         <Alert>
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>{t('partner_pending_alert', locale)}</AlertDescription>
+                        </Alert>
+                    )}
+
+                    {isSuspended && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                Akun Anda sedang suspended. Aksi terbatas hingga status diaktifkan kembali.
+                            </AlertDescription>
                         </Alert>
                     )}
 
@@ -86,42 +108,18 @@ function PartnerDashboardContent() {
                                 <CardDescription>{t('partner_work_desc', locale)}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Tabs defaultValue="tab1" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-5">
-                                        <TabsTrigger value="tab1">Tab 1</TabsTrigger>
-                                        <TabsTrigger value="tab2">Tab 2</TabsTrigger>
-                                        <TabsTrigger value="tab3">Tab 3</TabsTrigger>
-                                        <TabsTrigger value="tab4">Tab 4</TabsTrigger>
-                                        <TabsTrigger value="tab5">Tab 5</TabsTrigger>
-                                    </TabsList>
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <TabsContent key={i} value={`tab${i}`}>
-                                            <p className="text-muted-foreground">Placeholder content for tab {i}</p>
-                                        </TabsContent>
-                                    ))}
-                                </Tabs>
+                                <PartnerWorkTabs isLocked={isLocked} />
                             </CardContent>
                         </Card>
                     )}
 
                     {activeMenu === 'pendapatan' && (
                         <div className="space-y-6">
-                            <LockedPanel
-                                title={t('partner_financial_title', locale)}
-                                description={t('partner_financial_desc', locale)}
-                            />
-                            <LockedPanel
-                                title={t('partner_balance_title', locale)}
-                                description={t('partner_balance_desc', locale)}
-                            />
-                            <LockedPanel
-                                title={t('partner_cert_title', locale)}
-                                description={t('partner_cert_desc', locale)}
-                            />
+                            <PartnerWalletCard />
                             <Card className="border-dashed">
                                 <CardContent className="pt-6">
                                     <p className="text-center text-muted-foreground">
-                                        More features coming soon
+                                        Fitur penarikan dan riwayat transaksi akan segera hadir
                                     </p>
                                 </CardContent>
                             </Card>

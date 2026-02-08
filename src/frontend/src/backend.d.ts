@@ -7,48 +7,34 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface LayanankuPublic {
+export interface ServicePublic {
     id: string;
-    status: LayananStatus;
-    startAt: bigint;
-    sharePrincipals: Array<string>;
-    kind: LayananKind;
+    status: Status;
+    title: string;
+    serviceQuantity: bigint;
+    serviceType: string;
+    thumbnail: string;
+    code: string;
+    icon: string;
     createdAt: bigint;
-    endAt: bigint;
+    unit: string;
+    banner: string;
+    description: string;
+    available: boolean;
     updatedAt: bigint;
+    category: string;
+    estimatedTeamSize: bigint;
+    estimatedTime: string;
+    detailedInformation: string;
+}
+export interface SearchResult {
+    users: Array<UserProfile>;
+    services: Array<Service>;
 }
 export interface InternalRegistrationData {
     name: string;
     whatsapp: string;
     email: string;
-}
-export interface FinancialSummary {
-    completedPayouts: bigint;
-    totalPayoutAmount: bigint;
-    completedTransactions: bigint;
-    totalTransactionAmount: bigint;
-}
-export interface ClientRegistrationData {
-    name: string;
-    whatsapp: string;
-    email: string;
-    company: string;
-}
-export interface FinancialPartnerData {
-    id: string;
-    status?: string;
-    balance: bigint;
-    partnerName: string;
-    availableBalance: bigint;
-    nbUpdate?: string;
-    pendingWithdrawals: bigint;
-    createdAt?: string;
-    history: Array<string>;
-    partnerId: string;
-    insured: bigint;
-    bonus: bigint;
-    totalEarnings: bigint;
-    withdrawn: bigint;
 }
 export interface Task {
     id: string;
@@ -76,11 +62,40 @@ export interface Task {
     serviceReference: string;
     schedule: Schedule;
 }
+export type AuditLogEntryList = Array<AuditLogEntry>;
+export interface CustomerServiceUserDTO {
+    id: string;
+    status: UserStatus;
+    name: string;
+    principalId: string;
+}
+export interface PartnerRegistrationData {
+    name: string;
+    hourlyRate: bigint;
+    whatsapp: string;
+    email: string;
+    level: PartnerLevel;
+    domisili: string;
+    skills: string;
+}
+export interface ClientRegistrationData {
+    name: string;
+    whatsapp: string;
+    email: string;
+    company: string;
+}
+export interface AuditLogEntry {
+    metadata: string;
+    actionType: AuditActionType;
+    timestamp: bigint;
+    principalId: string;
+}
 export interface Service {
     id: string;
     additionalCost: bigint;
     status: Status;
     title: string;
+    serviceQuantity: bigint;
     serviceType: string;
     thumbnail: string;
     code: string;
@@ -110,11 +125,41 @@ export interface Schedule {
     isRemote: boolean;
     startDate?: string;
 }
-export interface AsistenmuCandidateDTO {
+export interface PartnerTaskDTO {
+    tasks: Array<PartnerTaskRecord>;
+    partnerName: string;
+    partnerId: string;
+}
+export interface InternalUserDTO {
+    id: string;
     status: UserStatus;
     name: string;
     role: string;
     principalId: string;
+}
+export interface InternalAccessCode {
+    code: string;
+    lastUpdated: bigint;
+    codeType: InternalCodeType;
+}
+export interface PartnerTaskRecord {
+    statusInternal: TaskStatusInternal;
+    title: string;
+    clientId: string;
+    internalDeadline?: bigint;
+    assignedPartnerId?: string;
+    createdAt: bigint;
+    description: string;
+    assignedAsistenmuName: string;
+    updatedAt: bigint;
+    taskId: string;
+    createdByPrincipal: Principal;
+    requestType: RequestType;
+    clientDeadline?: bigint;
+}
+export interface UserApprovalInfo {
+    status: ApprovalStatus;
+    principal: Principal;
 }
 export interface TaskRecord {
     statusInternal: TaskStatusInternal;
@@ -131,41 +176,6 @@ export interface TaskRecord {
     requestType: RequestType;
     clientDeadline?: bigint;
 }
-export interface LayanankuRecord {
-    id: string;
-    status: LayananStatus;
-    clientId: string;
-    startAt: bigint;
-    sharePrincipals: Array<string>;
-    kind: LayananKind;
-    createdAt: bigint;
-    endAt: bigint;
-    hargaPerLayanan: bigint;
-    updatedAt: bigint;
-    asistenmuPrincipalId?: string;
-    asistenmuNameSnapshot?: string;
-}
-export interface ExtendedLayanankuRecord {
-    id: string;
-    status: LayananStatus;
-    clientId: string;
-    startAt: bigint;
-    sharePrincipals: Array<string>;
-    kind: LayananKind;
-    createdAt: bigint;
-    asistenmuName?: string;
-    endAt: bigint;
-    hargaPerLayanan: bigint;
-    updatedAt: bigint;
-    asistenmuPrincipalId?: string;
-}
-export interface PartnerRegistrationData {
-    name: string;
-    whatsapp: string;
-    email: string;
-    domisili: string;
-    skills: string;
-}
 export interface UserProfile {
     id: string;
     status: UserStatus;
@@ -175,16 +185,34 @@ export interface UserProfile {
     role: string;
     principalId: string;
 }
-export enum LayananKind {
-    JAGA = "JAGA",
-    RAPI = "RAPI",
-    FOKUS = "FOKUS",
-    TENANG = "TENANG"
+export enum ApprovalStatus {
+    pending = "pending",
+    approved = "approved",
+    rejected = "rejected"
 }
-export enum LayananStatus {
-    active = "active",
-    expired = "expired",
-    inactive = "inactive"
+export enum AuditActionType {
+    changeCodeStatus = "changeCodeStatus",
+    rotateCode = "rotateCode",
+    viewCode = "viewCode",
+    updateCodeData = "updateCodeData",
+    copyCode = "copyCode",
+    generateNewCode = "generateNewCode",
+    toggleCodeVisibility = "toggleCodeVisibility"
+}
+export enum InternalCodeType {
+    codeA = "codeA",
+    codeB = "codeB"
+}
+export enum InternalLoginType {
+    login = "login",
+    register = "register"
+}
+export enum PartnerLevel {
+    level1 = "level1",
+    level2 = "level2",
+    level3 = "level3",
+    level4 = "level4",
+    level5 = "level5"
 }
 export enum PaymentStatus {
     pending = "pending",
@@ -198,6 +226,11 @@ export enum RequestType {
     PRIORITY = "PRIORITY",
     URGENT = "URGENT",
     NORMAL = "NORMAL"
+}
+export enum SearchMode {
+    searchByClientId = "searchByClientId",
+    searchByClientPrincipal = "searchByClientPrincipal",
+    searchAll = "searchAll"
 }
 export enum Status {
     outdated = "outdated",
@@ -235,43 +268,58 @@ export enum UserStatus {
     blacklisted = "blacklisted"
 }
 export interface backendInterface {
-    assignAsistenmuToLayananku(layanankuId: string, asistenmuPrincipalId: string): Promise<boolean>;
+    activateService(serviceId: string): Promise<boolean>;
+    approvePartner(partnerId: string): Promise<void>;
+    approvePartnerProposal(_proposalId: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    assignTaskToPartner(taskId: string, partnerId: string, internalDeadline: bigint | null, asistenmuName: string): Promise<boolean>;
+    assignTaskToPartner(taskId: string, partnerId: string): Promise<boolean>;
+    blacklistPartner(partnerId: string): Promise<void>;
     claimSuperadmin(): Promise<string>;
-    createFinancialPartnerData(data: FinancialPartnerData): Promise<void>;
-    createLayanankuForClient(clientId: string, kind: LayananKind, startAt: bigint, endAt: bigint, sharePrincipals: Array<string>, hargaPerLayanan: bigint): Promise<string>;
+    createNewPartnerProposal(_partnerDetails: PartnerRegistrationData): Promise<string>;
     createService(service: Service): Promise<void>;
-    createTask(title: string, description: string, clientDeadline: bigint | null, requestType: RequestType): Promise<string>;
     createTaskLegacy(task: Task): Promise<void>;
-    deactivateLayananku(idLayanan: string): Promise<boolean>;
-    getAllFinancialPartnerData(): Promise<Array<FinancialPartnerData>>;
+    deactivateService(serviceId: string): Promise<boolean>;
+    generateRandomAccessCode(codeType: InternalCodeType, prefix: string): Promise<string>;
+    getAccessCodes(): Promise<Array<InternalAccessCode>>;
+    getActiveClientProfiles(): Promise<Array<UserProfile>>;
+    getAllAuditLogsSorted(_sortOrder: string): Promise<AuditLogEntryList>;
+    getAllCustomerServiceUsers(): Promise<Array<CustomerServiceUserDTO>>;
+    getAllInternalUsers(): Promise<Array<InternalUserDTO>>;
+    getAllPartnersByStatus(status: UserStatus): Promise<Array<UserProfile>>;
     getAllServices(): Promise<Array<Service>>;
+    getAllServicesPublic(): Promise<Array<ServicePublic>>;
+    getAllTasksInternal(): Promise<Array<TaskRecord>>;
     getAllTasksLegacy(): Promise<Array<Task>>;
-    getAsistenmuCandidates(): Promise<Array<AsistenmuCandidateDTO>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getDefaultPartnerProfile(): Promise<UserProfile>;
-    getFinancialPartnerDataById(walletId: string): Promise<FinancialPartnerData | null>;
-    getFinancialSummary(): Promise<FinancialSummary>;
-    getLayanankuForClient(clientId: string): Promise<Array<ExtendedLayanankuRecord>>;
-    getLayanankuInternal(idLayanan: string): Promise<LayanankuRecord | null>;
-    getMyClientTasks(): Promise<Array<TaskRecord>>;
-    getMyLayananku(): Promise<Array<LayanankuPublic>>;
-    getMyPartnerTasks(): Promise<Array<TaskRecord>>;
-    getMyWallet(): Promise<FinancialPartnerData>;
+    getMyPartnerTasks(): Promise<PartnerTaskDTO>;
     getServiceById(serviceId: string): Promise<Service | null>;
+    getServiceByIdPublic(serviceId: string): Promise<ServicePublic | null>;
     getTaskById(taskId: string): Promise<TaskRecord | null>;
     getTaskLegacy(taskId: string): Promise<Task | null>;
     getUserProfile(userId: string): Promise<UserProfile | null>;
-    hasActiveLayananku(clientId: string): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
+    isCallerApproved(): Promise<boolean>;
     isValidRoleName(roleName: string): Promise<boolean>;
-    myHasActiveLayananku(): Promise<boolean>;
+    listApprovals(): Promise<Array<UserApprovalInfo>>;
+    logAuditEntry(actionType: AuditActionType, metadata: string): Promise<void>;
+    manageAccessCode(codeType: InternalCodeType, newCode: string): Promise<void>;
+    reactivatePartner(partnerId: string): Promise<void>;
     registerClient(name: string, email: string, whatsapp: string, company: string): Promise<string>;
+    registerCustomerServiceUser(): Promise<string>;
     registerInternalUser(role: string, name: string, email: string, whatsapp: string): Promise<string>;
-    registerPartner(name: string, email: string, whatsapp: string, skills: string, domisili: string): Promise<string>;
+    registerPartner(name: string, email: string, whatsapp: string, skills: string, domisili: string, level: PartnerLevel, hourlyRate: bigint): Promise<string>;
+    rejectPartner(partnerId: string): Promise<void>;
+    rejectPartnerProposal(_proposalId: string): Promise<void>;
+    requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    setTaskStatus(taskId: string, statusInternal: TaskStatusInternal): Promise<boolean>;
-    updateLayanankuShare(idLayanan: string, newSharePrincipals: Array<string>): Promise<boolean>;
+    searchServicesAndClientsById(searchInput: string, searchMode: SearchMode): Promise<SearchResult>;
+    searchUsersByMode(searchInput: string, searchMode: SearchMode): Promise<Array<UserProfile>>;
+    setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
+    setTaskStatus(taskId: string, newStatus: TaskStatusInternal): Promise<boolean>;
+    suspendPartner(partnerId: string): Promise<void>;
+    updatePartnerLevelAndHourlyRate(partnerId: string, level: PartnerLevel, hourlyRate: bigint): Promise<void>;
+    updateUserRole(userId: string, newRole: string): Promise<void>;
+    verifyAccessCode(code: string): Promise<InternalLoginType | null>;
 }

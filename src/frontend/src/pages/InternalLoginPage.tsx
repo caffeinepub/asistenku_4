@@ -12,11 +12,12 @@ import { toast } from 'sonner';
 import InternalGateGuard from '@/components/InternalGateGuard';
 
 const INTERNAL_ROLES = [
-    { id: 'ADMIN', label: 'Admin', route: '/admin' },
-    { id: 'ASISTENMU', label: 'Asistenmu', route: '/asistenmu' },
-    { id: 'SUPERVISOR', label: 'Supervisor', route: '/supervisor' },
-    { id: 'MANAGEMENT', label: 'Management', route: '/management' },
-    { id: 'FINANCE', label: 'Finance', route: '/finance' }
+    { id: 'ADMIN', label: 'Admin', route: '/admin/dashboard' },
+    { id: 'ASISTENMU', label: 'Asistenmu', route: '/asistenmu/dashboard' },
+    { id: 'SUPERVISOR', label: 'Supervisor', route: '/supervisor/dashboard' },
+    { id: 'MANAGEMENT', label: 'Management', route: '/management/dashboard' },
+    { id: 'FINANCE', label: 'Finance', route: '/finance/dashboard' },
+    { id: 'CUSTOMER_SERVICE', label: 'Customer Service', route: '/customer-service' }
 ];
 
 // Helper to normalize role for comparison
@@ -78,7 +79,7 @@ function InternalLoginContent() {
 
             const roleRoute = INTERNAL_ROLES.find((r) => r.id === roleId)?.route;
             if (roleRoute) {
-                navigate({ to: roleRoute });
+                navigate({ to: roleRoute as any });
             }
         } catch (err: any) {
             console.error('Workspace access error:', err);
@@ -110,7 +111,7 @@ function InternalLoginContent() {
             }
 
             toast.success('SUPERADMIN claimed successfully!');
-            navigate({ to: '/superadmin' });
+            navigate({ to: '/superadmin/dashboard' });
         } catch (err: any) {
             console.error('Superadmin claim error:', err);
 

@@ -4,6 +4,7 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
 import ManajemenLayananView from '@/components/layanan/ManajemenLayananView';
+import UserManagementView from '@/components/superadmin/UserManagementView';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
 
@@ -41,17 +42,7 @@ function AdminDashboardContent() {
                         </Card>
                     )}
 
-                    {activeMenu === 'users' && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>{t('admin_users_title', locale)}</CardTitle>
-                                <CardDescription>{t('admin_users_desc', locale)}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">User management features coming soon.</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {activeMenu === 'users' && <UserManagementView />}
 
                     {activeMenu === 'layanan' && <ManajemenLayananView />}
 

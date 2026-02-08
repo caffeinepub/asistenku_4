@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { toast } from 'sonner';
-import type { TaskRecord, RequestType } from '@/backend';
+import type { TaskRecord } from '../backend';
 
-// Create client service request mutation
+// Create client service request mutation - stubbed until backend implements
 export function useCreateClientServiceRequest() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -13,15 +13,11 @@ export function useCreateClientServiceRequest() {
       title: string;
       description: string;
       clientDeadline: bigint | null;
-      requestType: RequestType;
+      requestType: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createTask(
-        data.title,
-        data.description,
-        data.clientDeadline,
-        data.requestType
-      );
+      // Backend method not yet implemented
+      throw new Error('Feature not yet available');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-client-tasks'] });
@@ -34,15 +30,15 @@ export function useCreateClientServiceRequest() {
   });
 }
 
-// Get my client tasks query
+// Get my client tasks query - stubbed until backend implements
 export function useGetMyClientTasks() {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<TaskRecord[]>({
     queryKey: ['my-client-tasks'],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getMyClientTasks();
+      // Backend method not yet implemented
+      return [];
     },
     enabled: !!actor && !actorFetching,
   });

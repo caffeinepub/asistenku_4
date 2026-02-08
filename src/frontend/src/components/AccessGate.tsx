@@ -23,10 +23,18 @@ function normalizeRole(role: string | undefined | null): string {
     return role.trim().toUpperCase();
 }
 
-// Helper to check if status is valid (active or pending)
-function isValidStatus(status: any): boolean {
+// Helper to check if status is valid (active, pending, or suspended for partners)
+function isValidStatus(status: any, role: string): boolean {
     if (!status) return false;
     const statusStr = String(status).toLowerCase().replace('#', '');
+    const normalizedRole = normalizeRole(role);
+    
+    // Partners can access with active, pending, or suspended (blacklisted handled separately)
+    if (normalizedRole === 'PARTNER') {
+        return statusStr === 'active' || statusStr === 'pending' || statusStr === 'suspended';
+    }
+    
+    // Other roles: active or pending
     return statusStr === 'active' || statusStr === 'pending';
 }
 
@@ -79,8 +87,8 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
                 return;
             }
 
-            // Check if status is valid (allow both active and pending)
-            if (!isValidStatus(user.status)) {
+            // Check if status is valid
+            if (!isValidStatus(user.status, user.role)) {
                 if (isInternal) {
                     setShowAccessDenied(true);
                 } else {

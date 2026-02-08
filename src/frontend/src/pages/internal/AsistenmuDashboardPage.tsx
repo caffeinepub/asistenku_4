@@ -1,9 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BrandLogo from '@/components/BrandLogo';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
+import AsistenmuDelegationView from '@/components/internal/asistenmu/AsistenmuDelegationView';
 
 function AsistenmuDashboardContent() {
     const { locale } = useLocale();
@@ -27,15 +27,7 @@ function AsistenmuDashboardContent() {
                         <p className="text-muted-foreground">{t('asistenmu_dashboard_desc', locale)}</p>
                     </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t('asistenmu_dashboard_title_card', locale)}</CardTitle>
-                            <CardDescription>{t('asistenmu_dashboard_desc_card', locale)}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{t('asistenmu_dashboard_placeholder', locale)}</p>
-                        </CardContent>
-                    </Card>
+                    <AsistenmuDelegationView />
                 </div>
             </main>
         </div>

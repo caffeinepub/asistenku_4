@@ -43,7 +43,7 @@ function ClientDashboardContent() {
                             <TabsTrigger value="ringkasan">{t('tab_summary', locale)}</TabsTrigger>
                             <TabsTrigger value="profil">{t('tab_profile', locale)}</TabsTrigger>
                             <TabsTrigger value="layananku">{t('tab_services', locale)}</TabsTrigger>
-                            <TabsTrigger value="permintaan">{t('tab_service_request', locale)}</TabsTrigger>
+                            <TabsTrigger value="permintaan">{t('tab_my_requests', locale)}</TabsTrigger>
                             <TabsTrigger value="delegasi">{t('tab_delegation', locale)}</TabsTrigger>
                         </TabsList>
 

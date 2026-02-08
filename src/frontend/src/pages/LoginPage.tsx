@@ -54,8 +54,8 @@ export default function LoginPage() {
                 return;
             }
 
-            const route = role === 'CLIENT' ? '/client' : '/partner';
-            navigate({ to: route });
+            const route = role === 'CLIENT' ? '/client/dashboard' : '/partner/dashboard';
+            navigate({ to: route as any });
         } catch (err: any) {
             console.error('Workspace access error:', err);
             if (err.message?.includes('Actor not available')) {

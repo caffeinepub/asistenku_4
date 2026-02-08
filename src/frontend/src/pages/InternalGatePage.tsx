@@ -9,54 +9,48 @@ import { AlertCircle } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
+import { useVerifyInternalAccessCode } from '@/hooks/useInternalAccessCodes';
+import { InternalLoginType } from '@/backend';
 
 export default function InternalGatePage() {
     const navigate = useNavigate();
     const { locale } = useLocale();
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isVerifying, setIsVerifying] = useState(false);
+    
+    const verifyMutation = useVerifyInternalAccessCode();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        setIsVerifying(true);
 
         try {
             const trimmedCode = code.trim();
             
             if (!trimmedCode || trimmedCode.length === 0) {
                 setError(t('invalid_code_ui', locale));
-                setIsVerifying(false);
                 return;
             }
 
-            // Backend verification not available yet - using client-side validation
-            // When backend method is available, call: actor.verifyInternalAccessCode(trimmedCode)
-            // Expected response: { ok: boolean; route?: string }
-            
-            // Temporary client-side logic until backend implements verifyInternalAccessCode
-            // This allows any non-empty code to pass and defaults to /internal/login
-            const mockResponse = {
-                ok: true,
-                route: '/internal/login' // Backend should return either /internal/daftar or /internal/login
-            };
+            const result = await verifyMutation.mutateAsync(trimmedCode);
 
-            if (mockResponse.ok && mockResponse.route) {
+            if (result) {
                 // Set session flags before navigation
                 sessionStorage.setItem('internalGatePassed', 'true');
                 sessionStorage.setItem('internalGatePassedAt', Date.now().toString());
 
-                // Navigate to the route provided by backend
-                navigate({ to: mockResponse.route });
+                // Navigate based on backend response
+                const route = result === InternalLoginType.login 
+                    ? '/internal/login' 
+                    : '/internal/daftar';
+                
+                navigate({ to: route });
             } else {
                 setError(t('invalid_code_ui', locale));
             }
         } catch (err: any) {
             console.error('Code verification error:', err);
             setError(t('invalid_code_ui', locale));
-        } finally {
-            setIsVerifying(false);
         }
     };
 
@@ -89,8 +83,12 @@ export default function InternalGatePage() {
                             />
                         </div>
 
-                        <Button type="submit" className="w-full" disabled={isVerifying}>
-                            {isVerifying ? 'Verifying...' : t('continue', locale)}
+                        <Button 
+                            type="submit" 
+                            className="w-full" 
+                            disabled={verifyMutation.isPending}
+                        >
+                            {verifyMutation.isPending ? 'Verifying...' : t('continue', locale)}
                         </Button>
 
                         <Button

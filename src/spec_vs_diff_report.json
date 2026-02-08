@@ -1,105 +1,55 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T15:15:23.632Z",
-  "summary": "Diff adds a new client “Service Request” tab UI and React Query hooks, plus introduces a backend migration module that adds a `requestType` concept. However, several backend requirements are either not evidenced or appear implemented with a different type (variant) than specified (Text), and backend-side validation/compatibility guarantees are not clearly shown in the provided diff summary/truncation.",
+  "generatedAt": "2026-02-08T19:34:07.929Z",
+  "summary": "Frontend now calls a backend verification method instead of a mock and adds a Superadmin Pengaturan view + React Query hooks for fetching/updating access codes. However, key parts of the backend contract and the required code status support (including viewing/updating status and enforcing inactive codes as invalid) are not evidenced in the diff, and the Superadmin UI/hook only updates code values (not statuses).",
   "missing_requirements": [
     {
-      "id": "REQ-109",
-      "requirement": "Backend MinimalTask.TaskRecord must include `requestType : Text` and stored/returned values must always contain one of: \"NORMAL\", \"PRIORITY\", \"URGENT\" (uppercase).",
-      "reason": "The only explicit new `requestType` shown is in `backend/migration.mo`, where it is implemented as a Motoko variant (`RequestType` with `#NORMAL/#PRIORITY/#URGENT`) rather than `Text`. The truncated `backend/main.mo` snippet does not show `MinimalTask.TaskRecord` being updated to include `requestType : Text` or enforcing uppercase Text values on stored/returned records.",
+      "id": "REQ-1",
+      "requirement": "Backend verification must return ok=true and a backend-provided route string (/internal/login for Code A, /internal/daftar for Code B), and reject others as invalid without trapping.",
+      "reason": "Frontend expects `actor.verifyAccessCode(code)` to return `InternalLoginType | null` and then maps that enum to routes on the client; there is no evidence of a backend response that includes a route string and ok flag as specified.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
+        "frontend/src/hooks/useInternalAccessCodes.ts",
+        "frontend/src/pages/InternalGatePage.tsx"
       ]
     },
     {
-      "id": "REQ-110",
-      "requirement": "Backend `createTask(...)` must accept `requestType : Text` (or equivalent) and reject invalid values (after trimming) with an English trap message like \"INVALID_REQUEST_TYPE\"; created tasks must always start with `statusInternal = #REQUESTED` and must not mutate service counters/statuses.",
-      "reason": "Frontend calls `actor.createTask(title, description, clientDeadline, requestType)` with `requestType` as a `RequestType` enum/variant, but the diff summary does not show the backend `createTask` signature change, any trimming/validation logic, or the explicit trap message requirement. Also no evidence is shown confirming `statusInternal` is always forced to `#REQUESTED` in create.",
+      "id": "REQ-2",
+      "requirement": "Backend query API must return internal access codes including: code type (A/B), code value, last updated timestamp, and a status field.",
+      "reason": "The only backend type shown for internal access codes includes `code`, `codeType`, and `lastUpdated`—no `status` field is present in the diff excerpt.",
       "evidence": [
-        "frontend/src/hooks/useClientServiceRequests.ts",
-        "backend/main.mo (truncated)"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-111",
-      "requirement": "Backward compatibility: pre-existing stored tasks must safely default missing `requestType` to \"NORMAL\" during read and/or via conditional migration; returned tasks from `getMyClientTasks`, `getMyPartnerTasks`, `getTaskById` must include non-empty `requestType`. Migration only if required by stable state layout (conditional migration policy).",
-      "reason": "A migration module is added and applied, and it sets `requestType = #NORMAL` during migration, but the diff summary does not show any read-time defaulting in getters, nor does it demonstrate the migration is conditional (only when required by stable layout). The getter functions themselves are not shown, so it’s not evidenced that they always return a populated `requestType` for older records.",
+      "id": "REQ-2",
+      "requirement": "Backend update API must allow SUPERADMIN to set Code A value, Code B value, and their statuses; non-SUPERADMIN callers rejected; inactive/disabled codes must fail verification.",
+      "reason": "The frontend mutation calls `actor.manageAccessCode(codeType, newCode)` and the settings UI only edits `newCode`; there is no evidence of any status parameter, status enforcement in verification, or authorization checks in the backend diff excerpt.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
+        "frontend/src/hooks/useInternalAccessCodes.ts",
+        "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-112",
-      "requirement": "Hooks must follow existing actor readiness / AccessGate guard patterns: do not run protected-page queries before AccessGate verification completes; technical errors shown in English.",
-      "reason": "The query is gated by `enabled: !!actor && !actorFetching`, but the diff summary does not evidence that this specifically aligns with the existing AccessGate verification completion requirement (it depends on what `useActor()` and `actorFetching` mean).",
+      "id": "REQ-4",
+      "requirement": "Superadmin Pengaturan tab must display Code A and Code B with label, current code value, status, and last updated time; and provide controls to update both code values and statuses.",
+      "reason": "The added settings view state and save handlers only cover code values (`codeAValue`, `codeBValue`) and update via `newCode` only; status viewing/editing is not evidenced in the shown code.",
       "evidence": [
-        "frontend/src/hooks/useClientServiceRequests.ts"
-      ]
-    },
-    {
-      "id": "REQ-113",
-      "requirement": "Client “Service Request” UI must include required fields (Title, Description, requestType selection with 3 options), optional deadline input, always-visible English info note, and list items showing Title + requestType badge (Normal/Priority/Urgent) + status text \"REQUESTED\"; no pricing fields.",
-      "reason": "A new tab component exists and shows Title/Description fields and requestType state; however, the file is truncated before showing the requestType helper blocks, the always-visible info note, the deadline input UI, and the list rendering that includes explicit status text \"REQUESTED\" and empty state handling. These specific AC items are not fully evidenced in the truncated diff.",
-      "evidence": [
-        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)",
-        "frontend/src/pages/client/ClientDashboardPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-115",
-      "requirement": "RequestType helper texts in English for NORMAL/PRIORITY/URGENT (with URGENT subtly emphasized).",
-      "reason": "i18n keys for helper texts are added (e.g., `request_type_*_helper`), but the truncated UI file does not show these helper texts actually being rendered, nor any subtle emphasis styling for URGENT.",
-      "evidence": [
-        "frontend/src/lib/i18n.ts (truncated)",
-        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-116",
-      "requirement": "New UI copy must be added to i18n for both EN/ID locales; technical errors remain English and are not translated; no branching on translated strings.",
-      "reason": "The diff shows new translation keys added to the `TranslationKey` union, but the actual `en` and `id` dictionary entries are not visible in the truncated snippet, so it is not evidenced that both locales have values. (The hook does keep error messages in English, which aligns, but the EN/ID addition is not fully evidenced.)",
-      "evidence": [
-        "frontend/src/lib/i18n.ts (truncated)",
-        "frontend/src/hooks/useClientServiceRequests.ts"
+        "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+        "frontend/src/hooks/useInternalAccessCodes.ts"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Backend migration changes `requestType` to a Motoko variant (`RequestType`) stored in `TaskRecord`, rather than the specified `requestType : Text` field.",
-      "reason": "BuildRequest explicitly requires `requestType : Text` with allowed uppercase values; the diff introduces a new `RequestType` variant type and stores that in the migrated record.",
-      "evidence": [
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "description": "Apply migration via `(with migration = Migration.run) actor` plus adding `backend/migration.mo` unconditionally (conditional migration policy not evidenced).",
-      "reason": "BuildRequest constrains: only create/update `backend/migration.mo` if required by stable-state upgrade; the diff adds the file and wires migration application, but does not evidence that it is conditionally required by current stable layout.",
-      "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "description": "UI uses a `destructive` badge variant for URGENT request type.",
-      "reason": "The requirement asks for a subtle, calm emphasis for URGENT helper text; using a `destructive` badge may be more aggressive and is not explicitly requested (and the requirement emphasis was for helper text, not necessarily badge styling).",
-      "evidence": [
-        "frontend/src/components/client/ClientServiceRequestTab.tsx (truncated)"
-      ]
-    }
-  ],
-  "confidence": 0.66,
+  "hallucinated_features": [],
+  "confidence": 0.68,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/client/ClientServiceRequestTab.tsx",
-    "frontend/src/hooks/useClientServiceRequests.ts",
-    "frontend/src/lib/i18n.ts",
-    "frontend/src/pages/client/ClientDashboardPage.tsx",
+    "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+    "frontend/src/hooks/useInternalAccessCodes.ts",
+    "frontend/src/pages/InternalGatePage.tsx",
+    "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx",
     "project_state.json"
   ]
 }

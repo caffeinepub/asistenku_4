@@ -1,183 +1,121 @@
 {
   "kind": "build_request",
-  "title": "Add Client Service Request (task request) UI + minimal backend support (requestType)",
+  "title": "Activate real internal access-code verification and Superadmin settings to view/update Code A & B",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-109",
-      "text": "Extend the backend Minimal Task record to store a client request priority field `requestType : Text` with allowed values exactly: \"NORMAL\", \"PRIORITY\", \"URGENT\".",
+      "id": "REQ-1",
+      "text": "Implement backend support for real internal access-code verification so that entering Code A routes to \"/internal/login\" (Asistenku masuk) and entering Code B routes to \"/internal/daftar\" (Asistenku daftar). The backend must reject any other code as invalid.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-User-1"
         ],
         "quotes": [
-          "BACKEND — TASK RECORD (MINIMAL ADDITION)\n\nAdd field to Task:\n- requestType : Text\n  Allowed values:\n  \"NORMAL\"\n  \"PRIORITY\"\n  \"URGENT\""
+          "1. Kode A = Asistenku masuk Kode B = Asistenku daftar",
+          "3. A -> /internal/login B-> /internal/daftar"
         ]
       },
       "acceptanceCriteria": [
-        "The MinimalTask.TaskRecord type in backend/main.mo includes a new field `requestType : Text`.",
-        "All stored/returned TaskRecord values always contain `requestType` as one of: NORMAL, PRIORITY, URGENT (uppercase).",
-        "No other task/service lifecycle logic is added (no service locking, no consumption, no auto transitions)."
+        "Calling the backend verification method with the stored Code A returns ok=true and route=\"/internal/login\".",
+        "Calling the backend verification method with the stored Code B returns ok=true and route=\"/internal/daftar\".",
+        "Calling the backend verification method with any other input returns ok=false (or an equivalent explicit invalid response) without trapping.",
+        "The verification method can be called anonymously (since it is used before internal login/register)."
       ]
     },
     {
-      "id": "REQ-110",
-      "text": "Update the backend client task creation endpoint to accept and persist `requestType`, while keeping the global rules: client does not set/consume layanan quantities; created tasks must always start in REQUESTED status; and there must be no auto-redirect or automation triggered by backend writes.",
+      "id": "REQ-2",
+      "text": "Add backend APIs for Superadmin to load/view the current internal access codes and their status, and to update/rotate/change Code A and Code B along with their status.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-User-1"
         ],
         "quotes": [
-          "GLOBAL RULES\n- Client TIDAK menentukan jumlah layanan.\n- Client TIDAK mengunci / mengurangi layanan.\n- Semua request berstatus REQUESTED.\n- Tidak ada auto-redirect setelah submit.\n- Tidak ada automasi konsumsi layanan.\n- Asistenmu adalah gatekeeper final.\n\nOn Submit:\n- Create task with status = REQUESTED"
+          "2. Iya superadmin bisa melihat daftar semua kode yang aktif + statusnya dan mengubah kodenya juga"
         ]
       },
       "acceptanceCriteria": [
-        "Backend `createTask(...)` (the Minimal Task create endpoint) accepts a `requestType : Text` argument (or equivalent) and stores it into the new TaskRecord field.",
-        "If `requestType` is not one of NORMAL/PRIORITY/URGENT (after trimming), the backend rejects the call with a clear technical trap message in English (e.g., \"INVALID_REQUEST_TYPE\").",
-        "Created task records always have `statusInternal = #REQUESTED` and do not mutate any Layananku/service counters or statuses."
+        "There is a query API that returns a list of internal access codes including: code type (A/B), the code value, last updated timestamp, and a status field.",
+        "There is an update API that allows SUPERADMIN to set Code A value, Code B value, and their statuses.",
+        "Non-SUPERADMIN callers are rejected (trap or error result) when attempting to view or update codes.",
+        "If a status marks a code as inactive/disabled, verification using that code returns invalid."
       ]
     },
     {
-      "id": "REQ-111",
-      "text": "Ensure backward compatibility for any existing stored Minimal Task records by safely defaulting missing `requestType` to \"NORMAL\" during read and/or by performing a conditional state migration on upgrade.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "BACKEND — TASK RECORD (MINIMAL ADDITION)\n\nAdd field to Task:\n- requestType : Text"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After deploying the update, the canister does not trap on reading previously stored tasks that were created before `requestType` existed.",
-        "Any pre-existing task returned by `getMyClientTasks`, `getMyPartnerTasks`, and `getTaskById` includes a non-empty `requestType` (defaults to \"NORMAL\" if it was missing).",
-        "Migration logic is added only if required by the current stable state layout (follow the project’s conditional migration policy)."
-      ]
-    },
-    {
-      "id": "REQ-112",
-      "text": "Add frontend React Query hooks/mutations for the client request flow: create a service request task and list the caller’s submitted requests, using the existing actor readiness patterns and error handling style.",
+      "id": "REQ-3",
+      "text": "Replace the mockResponse behavior in frontend InternalGatePage with real backend verification: submit the entered code to the backend and navigate to the backend-provided route only when verification succeeds; otherwise show an invalid-code error.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-User-1"
         ],
         "quotes": [
-          "Build Client Service Request (Permintaan Layanan) UI + minimal backend support.\nClient hanya mengajukan permintaan.\nAsistenmu (AM) menentukan jumlah layanan & konfirmasi via WhatsApp."
+          "Oke aku ingin kamu mengakfifkan logika aslinya"
         ]
       },
       "acceptanceCriteria": [
-        "A new React Query mutation exists to call the backend task creation method with parameters: title, description, requestType, and optional clientDeadline.",
-        "A new React Query query exists to fetch the client’s tasks/requests via the backend client-safe list endpoint (e.g., `getMyClientTasks`).",
-        "Hooks do not run on protected-page mount before AccessGate verification completes (no lifecycle auto calls that would violate the existing guard pattern).",
-        "Technical errors are shown in English (consistent with existing toast/error patterns)."
+        "InternalGatePage no longer routes all non-empty codes to \"/internal/login\".",
+        "Entering Code A successfully navigates to \"/internal/login\".",
+        "Entering Code B successfully navigates to \"/internal/daftar\".",
+        "Entering an invalid (or inactive) code shows an error message and does not navigate.",
+        "The existing sessionStorage flags (\"internalGatePassed\", \"internalGatePassedAt\") are only set on successful verification, as they are today."
       ]
     },
     {
-      "id": "REQ-113",
-      "text": "Implement a Client dashboard “Service Request” UI inside the existing `/client` workspace: a form to submit a request and a list view showing the client’s submitted requests with requestType badges and default status REQUESTED.",
+      "id": "REQ-4",
+      "text": "Implement the Superadmin Dashboard \"Pengaturan\" tab content to load and display a list of all internal access codes (A and B) with their status, and provide controls for Superadmin to update the code values and statuses.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-User-1"
         ],
         "quotes": [
-          "CLIENT UI — FORM PERMINTAAN LAYANAN\n\nForm Fields:\n1. Judul Permintaan (Text, required)\n2. Deskripsi Permintaan (Textarea, required)\n\n3. Tipe Permintaan (requestType) — Radio / Segmented Control\n   Options:\n   - NORMAL\n   - PRIORITY\n   - URGENT\n\n4. Deadline dari Client (optional, date input)\n\nCLIENT — LIST PERMINTAAN\n\nDisplay badge based on requestType:\n- NORMAL   → \"Normal\"\n- PRIORITY → \"Prioritas\"\n- URGENT   → \"Urgent\"\n\nDefault status shown:\nREQUESTED"
+          "mengakfifkan untuk load/view dan mengganti kode A dan B di dashboard superadmin di tab pengaturan",
+          "superadmin bisa melihat daftar semua kode yang aktif + statusnya dan mengubah kodenya juga"
         ]
       },
       "acceptanceCriteria": [
-        "The Client workspace (`/client`, ClientDashboardPage) includes a clearly accessible section/tab for submitting and viewing service requests without removing existing tabs.",
-        "The request form includes required fields: Title (text) and Description (textarea), a required requestType selection with three options (NORMAL/PRIORITY/URGENT), and an optional client deadline date input.",
-        "Under the form, an info note is always visible (in English) communicating that estimates are guidance and final schedule/quantity will be confirmed by Asistenmu.",
-        "The list renders safely when empty and displays for each request at minimum: Title, requestType badge text (Normal/Priority/Urgent), and status text \"REQUESTED\".",
-        "No pricing fields are displayed anywhere in this client request UI."
+        "The placeholder \"Settings coming soon.\" content is replaced with a working settings view under the existing menu item value \"pengaturan\".",
+        "The settings view displays Code A and Code B entries, each showing: label, current code value, status, and last updated time.",
+        "Superadmin can edit/save the code value and status for Code A and Code B from this screen.",
+        "The UI includes loading and error states consistent with other Superadmin cards/pages (spinners/skeletons and readable error text).",
+        "All user-facing text introduced in this settings view is in English."
       ]
     },
     {
-      "id": "REQ-114",
-      "text": "On successful client request submission, keep the user on the same page (no auto-redirect) and show an English success message; on failure, show a non-crashing error state/toast while keeping the UI visible.",
+      "id": "REQ-5",
+      "text": "Add/extend frontend React Query hooks to call the new backend APIs for verifying internal access codes and for Superadmin to fetch/update the internal access codes; ensure queries are invalidated/refetched after updates so the settings list stays current.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-User-1"
         ],
         "quotes": [
-          "CTA Button:\n\"Kirim Permintaan\"\n\nOn Submit:\n- Do NOT auto redirect\n- Show success message:\n  \"Permintaan kamu sudah dikirim. Asistenmu akan menghubungi via WhatsApp.\""
+          "mengakfifkan untuk load/view"
         ]
       },
       "acceptanceCriteria": [
-        "Submitting the form does not navigate away from `/client` and does not auto-switch routes after success.",
-        "After success, the UI shows an English success message exactly: \"Your request has been sent. Asistenmu will contact you via WhatsApp.\"",
-        "After success, the form either resets to blank or remains filled but clearly indicates success (either behavior is acceptable as long as there is no redirect).",
-        "After success, the client request list refreshes via React Query invalidation/refetch without a full page reload.",
-        "On error, an English technical error toast/message is shown and the form remains usable (no blank white screen)."
-      ]
-    },
-    {
-      "id": "REQ-115",
-      "text": "Ensure the requestType helper texts are displayed for each option in the client form (in English), including a lightly highlighted note for URGENT.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Options:\n   - NORMAL\n     Helper text:\n     \"Cocok untuk pekerjaan dengan waktu pengerjaan lebih dari 2 hari.\"\n\n   - PRIORITY\n     Helper text:\n     \"Cocok jika pekerjaan perlu diselesaikan dalam ±1 hari.\"\n\n   - URGENT\n     Helper text (highlight ringan):\n     \"Untuk kebutuhan mendesak, target < 12 jam.\n      Ketersediaan akan dikonfirmasi oleh Asistenmu.\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "The NORMAL option displays an English helper text conveying: suitable when completion time is more than 2 days.",
-        "The PRIORITY option displays an English helper text conveying: suitable when the work should be completed in about 1 day.",
-        "The URGENT option displays an English helper text conveying: for urgent needs with a target under 12 hours and availability will be confirmed by Asistenmu.",
-        "The URGENT helper text is visually emphasized in a subtle, calm way (e.g., slightly different background/border), without changing the global theme or introducing aggressive colors."
-      ]
-    },
-    {
-      "id": "REQ-116",
-      "text": "Integrate the new client request UI copy into the existing frontend i18n system by adding new translation keys (EN/ID) but keep all technical/system/backend error strings in English and never use translated strings in logic/branching.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Use English for any user-facing text in the build request."
-        ]
-      },
-      "acceptanceCriteria": [
-        "New UI labels/messages for the Service Request feature are surfaced via `t(key, locale)` and added to `frontend/src/lib/i18n.ts` for both `en` and `id` locales.",
-        "All technical errors (backend trap messages, exception `.message`, etc.) remain in English and are not passed through translation.",
-        "No role/status/requestType comparisons or branching depend on translated strings (e.g., no `if (t('...') === ...)`)."
+        "There is a React Query query for fetching the current internal access codes for Superadmin settings.",
+        "There is a React Query mutation for updating codes/statuses and it triggers a refetch/invalidates the codes query on success.",
+        "InternalGatePage uses a dedicated function/hook that calls the backend verification method instead of a mock response.",
+        "No changes are made to immutable hook paths listed in SYSTEM_CONTEXT (compose via new hooks/files instead)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor; do not introduce additional backend services.",
-    "Only create/update backend/migration.mo if required by an upgrade of existing stable state (conditional migration policy).",
-    "Do not edit any frontend files under immutablePaths; compose UI using existing shared components instead.",
-    "Do not add any automation around layanan consumption/locking, task auto-assignment, or auto status transitions beyond setting status REQUESTED on create.",
-    "Do not introduce any auto-redirect after request submission."
+    "Backend must remain a single Motoko actor in backend/main.mo; introduce backend/migration.mo only if required to preserve existing stable state when adding new fields/state.",
+    "Do not edit files under frontend/src/components/ui (read-only UI components must be composed).",
+    "Do not edit immutable frontend paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts/tsx, frontend/src/main.tsx).",
+    "All new user-facing text added by this change must be in English."
   ],
   "nonGoals": [
-    "Building Asistenmu-side workflow screens for reviewing/approving requests (beyond existing WhatsApp confirmation as an external process).",
-    "Implementing service quantity selection, consumption, or billing logic for client requests.",
-    "Adding notifications, real-time updates, or WhatsApp API integration."
+    "Implementing third-party authentication (only Internet Identity is supported).",
+    "Adding new routing paths beyond the existing \"/internal\", \"/internal/login\", and \"/internal/daftar\" routes.",
+    "Building full audit-log UI; only code management and verification are in scope."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

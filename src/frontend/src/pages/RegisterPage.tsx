@@ -103,16 +103,16 @@ export default function RegisterPage() {
         }
     };
 
-    const handleNavigateToDashboard = async () => {
+    const handleGoToDashboard = async () => {
         if (!success) return;
 
         try {
             const { data: user } = await getCallerUser();
             if (user) {
                 if (success.type === 'client') {
-                    navigate({ to: '/client' });
+                    navigate({ to: '/client/dashboard' });
                 } else {
-                    navigate({ to: '/partner' });
+                    navigate({ to: '/partner/dashboard' });
                 }
             }
         } catch (err) {
@@ -122,10 +122,13 @@ export default function RegisterPage() {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-6">
+            <div className="min-h-screen bg-background p-6 flex items-center justify-center">
                 <Card className="w-full max-w-md">
                     <CardHeader className="text-center">
                         <BrandLogo variant="horizontal" className="h-10 mx-auto mb-4" />
+                        <div className="flex justify-center mb-4">
+                            <CheckCircle2 className="h-16 w-16 text-green-600" />
+                        </div>
                         <CardTitle>{t('registration_success_title', locale)}</CardTitle>
                         <CardDescription>
                             {success.type === 'client'
@@ -134,13 +137,11 @@ export default function RegisterPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Alert>
-                            <CheckCircle2 className="h-4 w-4" />
-                            <AlertDescription>
-                                {t('your_id', locale)}: <strong>{success.id}</strong>
-                            </AlertDescription>
-                        </Alert>
-                        <Button onClick={handleNavigateToDashboard} className="w-full">
+                        <div className="bg-muted p-4 rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">{t('your_id', locale)}</p>
+                            <p className="font-mono font-semibold">{success.id}</p>
+                        </div>
+                        <Button className="w-full" onClick={handleGoToDashboard}>
                             {t('go_to_dashboard', locale)}
                         </Button>
                     </CardContent>
@@ -150,110 +151,138 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-6">
-            <Card className="w-full max-w-2xl">
-                <CardHeader className="text-center">
+        <div className="min-h-screen bg-background p-6">
+            <div className="container mx-auto max-w-2xl">
+                <div className="text-center mb-8">
                     <BrandLogo variant="horizontal" className="h-10 mx-auto mb-4" />
-                    <CardTitle>{t('register_title', locale)}</CardTitle>
-                    <CardDescription>{t('register_subtitle', locale)}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {!identity && (
-                        <Alert className="mb-6">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{t('login_required_hint', locale)}</AlertDescription>
-                        </Alert>
-                    )}
+                    <h1 className="text-3xl font-bold">{t('register_title', locale)}</h1>
+                    <p className="text-muted-foreground mt-2">{t('register_subtitle', locale)}</p>
+                </div>
 
-                    {error && (
-                        <Alert variant="destructive" className="mb-6">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
+                {!identity && (
+                    <Alert className="mb-6">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{t('login_required_hint', locale)}</AlertDescription>
+                    </Alert>
+                )}
 
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'client' | 'partner')}>
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="client">{t('tab_client', locale)}</TabsTrigger>
-                            <TabsTrigger value="partner">{t('tab_partner', locale)}</TabsTrigger>
-                        </TabsList>
+                {error && (
+                    <Alert variant="destructive" className="mb-6">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
 
-                        <TabsContent value="client">
-                            <form onSubmit={handleClientSubmit} className="space-y-4">
-                                {clientFormFields.map((field) => (
-                                    <div key={field.name} className="space-y-2">
-                                        <Label htmlFor={`client-${field.name}`}>
-                                            {field.label}
-                                            {field.required && <span className="text-destructive ml-1">*</span>}
-                                        </Label>
-                                        <Input
-                                            id={`client-${field.name}`}
-                                            type={field.type}
-                                            placeholder={field.placeholder}
-                                            value={clientForm[field.name as keyof ClientFormData]}
-                                            onChange={(e) =>
-                                                handleClientChange(field.name as keyof ClientFormData, e.target.value)
-                                            }
-                                            required={field.required}
-                                        />
-                                    </div>
-                                ))}
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={registerClient.isPending || loginStatus === 'logging-in'}
-                                >
-                                    {registerClient.isPending
-                                        ? t('registering', locale)
-                                        : loginStatus === 'logging-in'
-                                          ? t('logging_in', locale)
-                                          : t('register_button', locale)}
-                                </Button>
-                            </form>
-                        </TabsContent>
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'client' | 'partner')}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="client">{t('tab_client', locale)}</TabsTrigger>
+                        <TabsTrigger value="partner">{t('tab_partner', locale)}</TabsTrigger>
+                    </TabsList>
 
-                        <TabsContent value="partner">
-                            <form onSubmit={handlePartnerSubmit} className="space-y-4">
-                                {partnerFormFields.map((field) => (
-                                    <div key={field.name} className="space-y-2">
-                                        <Label htmlFor={`partner-${field.name}`}>
-                                            {field.label}
-                                            {field.required && <span className="text-destructive ml-1">*</span>}
-                                        </Label>
-                                        <Input
-                                            id={`partner-${field.name}`}
-                                            type={field.type}
-                                            placeholder={field.placeholder}
-                                            value={partnerForm[field.name as keyof PartnerFormData]}
-                                            onChange={(e) =>
-                                                handlePartnerChange(field.name as keyof PartnerFormData, e.target.value)
-                                            }
-                                            required={field.required}
-                                        />
-                                    </div>
-                                ))}
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={registerPartner.isPending || loginStatus === 'logging-in'}
-                                >
-                                    {registerPartner.isPending
-                                        ? t('registering', locale)
-                                        : loginStatus === 'logging-in'
-                                          ? t('logging_in', locale)
-                                          : t('register_button', locale)}
-                                </Button>
-                            </form>
-                        </TabsContent>
-                    </Tabs>
+                    <TabsContent value="client">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('tab_client', locale)}</CardTitle>
+                                <CardDescription>
+                                    Register as a client to access our services
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleClientSubmit} className="space-y-4">
+                                    {clientFormFields.map((field) => (
+                                        <div key={field.name} className="space-y-2">
+                                            <Label htmlFor={field.name}>
+                                                {field.label}
+                                                {field.required && <span className="text-destructive ml-1">*</span>}
+                                            </Label>
+                                            <Input
+                                                id={field.name}
+                                                type={field.type}
+                                                placeholder={field.placeholder}
+                                                value={clientForm[field.name as keyof ClientFormData]}
+                                                onChange={(e) =>
+                                                    handleClientChange(
+                                                        field.name as keyof ClientFormData,
+                                                        e.target.value
+                                                    )
+                                                }
+                                                required={field.required}
+                                            />
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="submit"
+                                        className="w-full"
+                                        disabled={!identity || registerClient.isPending}
+                                    >
+                                        {!identity
+                                            ? t('logging_in', locale)
+                                            : registerClient.isPending
+                                              ? t('registering', locale)
+                                              : t('register_button', locale)}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                    <div className="mt-6 text-center">
-                        <Button variant="link" onClick={() => navigate({ to: '/login' })}>
-                            {t('already_have_account', locale)}
+                    <TabsContent value="partner">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('tab_partner', locale)}</CardTitle>
+                                <CardDescription>
+                                    Join our partner network and start earning
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handlePartnerSubmit} className="space-y-4">
+                                    {partnerFormFields.map((field) => (
+                                        <div key={field.name} className="space-y-2">
+                                            <Label htmlFor={field.name}>
+                                                {field.label}
+                                                {field.required && <span className="text-destructive ml-1">*</span>}
+                                            </Label>
+                                            <Input
+                                                id={field.name}
+                                                type={field.type}
+                                                placeholder={field.placeholder}
+                                                value={partnerForm[field.name as keyof PartnerFormData]}
+                                                onChange={(e) =>
+                                                    handlePartnerChange(
+                                                        field.name as keyof PartnerFormData,
+                                                        e.target.value
+                                                    )
+                                                }
+                                                required={field.required}
+                                            />
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="submit"
+                                        className="w-full"
+                                        disabled={!identity || registerPartner.isPending}
+                                    >
+                                        {!identity
+                                            ? t('logging_in', locale)
+                                            : registerPartner.isPending
+                                              ? t('registering', locale)
+                                              : t('register_button', locale)}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+
+                <div className="text-center mt-6">
+                    <p className="text-sm text-muted-foreground">
+                        {t('already_have_account', locale)}{' '}
+                        <Button variant="link" className="p-0 h-auto" onClick={() => navigate({ to: '/login' })}>
+                            {t('nav_login', locale)}
                         </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }

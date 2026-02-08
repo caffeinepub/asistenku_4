@@ -105,19 +105,14 @@ export type TranslationKey =
   | 'tab_summary'
   | 'tab_profile'
   | 'tab_services'
-  | 'tab_service_request'
+  | 'tab_my_requests'
   | 'tab_delegation'
   | 'summary_title'
   | 'summary_desc'
   | 'summary_welcome'
   | 'profile_title'
   | 'profile_desc'
-  | 'services_my_title'
-  | 'services_my_desc'
-  | 'services_none'
   | 'delegation_title'
-  | 'delegation_locked_desc'
-  | 'contact_admin'
   // Service Request
   | 'service_request_form_title'
   | 'service_request_form_desc'
@@ -126,15 +121,6 @@ export type TranslationKey =
   | 'service_request_description_label'
   | 'service_request_description_placeholder'
   | 'service_request_type_label'
-  | 'request_type_normal'
-  | 'request_type_normal_helper'
-  | 'request_type_normal_label'
-  | 'request_type_priority'
-  | 'request_type_priority_helper'
-  | 'request_type_priority_label'
-  | 'request_type_urgent'
-  | 'request_type_urgent_helper'
-  | 'request_type_urgent_label'
   | 'service_request_deadline_label'
   | 'service_request_info_note'
   | 'service_request_submit'
@@ -142,192 +128,159 @@ export type TranslationKey =
   | 'service_request_list_title'
   | 'service_request_list_desc'
   | 'service_request_list_empty'
+  | 'request_type_normal'
+  | 'request_type_normal_label'
+  | 'request_type_normal_helper'
+  | 'request_type_priority'
+  | 'request_type_priority_label'
+  | 'request_type_priority_helper'
+  | 'request_type_urgent'
+  | 'request_type_urgent_label'
+  | 'request_type_urgent_helper'
   | 'status_requested'
   | 'deadline_label'
-  | 'loading'
   // Partner dashboard
-  | 'partner_pending_alert'
+  | 'partner_greeting'
+  | 'partner_greeting_desc'
   | 'partner_summary_title'
   | 'partner_summary_desc'
   | 'partner_summary_welcome'
   | 'partner_profile_title'
   | 'partner_profile_desc'
+  | 'menu_summary'
+  | 'menu_profile'
+  | 'menu_work'
+  | 'menu_income'
+  | 'partner_pending_alert'
   | 'partner_work_title'
   | 'partner_work_desc'
-  | 'partner_income_title'
   | 'partner_financial_title'
   | 'partner_financial_desc'
   | 'partner_balance_title'
   | 'partner_balance_desc'
   | 'partner_cert_title'
   | 'partner_cert_desc'
-  | 'partner_academy_title'
-  | 'partner_academy_desc'
-  | 'partner_academy_content'
   // Admin dashboard
-  | 'admin_dashboard_title'
-  | 'admin_dashboard_desc'
   | 'admin_summary_title'
   | 'admin_summary_desc'
   | 'admin_summary_welcome'
-  | 'admin_users_title'
-  | 'admin_users_desc'
-  | 'admin_internal_access_title'
-  | 'admin_internal_access_desc'
-  | 'admin_client_title'
-  | 'admin_client_desc'
-  | 'admin_client_placeholder'
-  | 'admin_partner_title'
-  | 'admin_partner_desc'
-  | 'admin_partner_placeholder'
-  | 'admin_services_title'
-  | 'admin_services_desc'
-  | 'admin_services_placeholder'
-  | 'admin_task_title'
-  | 'admin_task_desc'
-  | 'admin_task_placeholder'
-  | 'admin_access_title'
-  // Superadmin dashboard
-  | 'superadmin_dashboard_title'
-  | 'superadmin_dashboard_desc'
-  | 'superadmin_summary_title'
-  | 'superadmin_summary_desc'
-  | 'superadmin_summary_welcome'
-  | 'superadmin_users_title'
-  | 'superadmin_users_desc'
-  | 'superadmin_users_placeholder'
-  | 'superadmin_internal_access_title'
-  | 'superadmin_internal_access_desc'
-  | 'superadmin_financial_title'
-  | 'superadmin_financial_desc'
-  | 'superadmin_financial_placeholder'
-  | 'superadmin_internal_title'
-  | 'superadmin_internal_desc'
-  | 'superadmin_internal_placeholder'
-  | 'superadmin_roles_title'
-  | 'superadmin_roles_desc'
-  | 'superadmin_roles_placeholder'
-  | 'superadmin_access_title'
-  | 'superadmin_audit_title'
-  | 'superadmin_audit_desc'
-  // Internal dashboards
+  // Asistenmu dashboard
   | 'asistenmu_workspace_title'
   | 'asistenmu_dashboard_title'
   | 'asistenmu_dashboard_desc'
   | 'asistenmu_dashboard_title_card'
   | 'asistenmu_dashboard_desc_card'
   | 'asistenmu_dashboard_placeholder'
-  | 'supervisor_workspace_title'
-  | 'supervisor_dashboard_title'
-  | 'supervisor_dashboard_desc'
-  | 'supervisor_dashboard_title_card'
-  | 'supervisor_dashboard_desc_card'
-  | 'supervisor_dashboard_placeholder'
-  | 'management_workspace_title'
-  | 'management_dashboard_title'
-  | 'management_dashboard_desc'
-  | 'management_dashboard_title_card'
-  | 'management_dashboard_desc_card'
-  | 'management_dashboard_placeholder'
+  // Finance dashboard
   | 'finance_workspace_title'
   | 'finance_dashboard_title'
   | 'finance_dashboard_desc'
   | 'finance_dashboard_title_card'
   | 'finance_dashboard_desc_card'
   | 'finance_dashboard_placeholder'
-  // Menu labels
-  | 'menu_summary'
-  | 'menu_profile'
-  | 'menu_work'
-  | 'menu_income'
-  | 'menu_client'
-  | 'menu_partner'
-  | 'menu_services'
-  | 'menu_task'
-  | 'menu_access'
-  | 'menu_users'
-  | 'menu_financial'
-  | 'menu_internal'
-  | 'menu_roles'
-  | 'menu_audit'
-  | 'menu_internal_access'
-  | 'menu_audit_log'
-  // Common labels
-  | 'coming_soon';
+  // Management dashboard
+  | 'management_workspace_title'
+  | 'management_dashboard_title'
+  | 'management_dashboard_desc'
+  | 'management_dashboard_title_card'
+  | 'management_dashboard_desc_card'
+  | 'management_dashboard_placeholder'
+  // Supervisor dashboard
+  | 'supervisor_workspace_title'
+  | 'supervisor_dashboard_title'
+  | 'supervisor_dashboard_desc'
+  | 'supervisor_dashboard_title_card'
+  | 'supervisor_dashboard_desc_card'
+  | 'supervisor_dashboard_placeholder'
+  // Superadmin dashboard
+  | 'superadmin_summary_title'
+  | 'superadmin_summary_desc'
+  | 'superadmin_summary_welcome'
+  | 'superadmin_audit_title'
+  | 'superadmin_audit_desc'
+  | 'task_management_title'
+  | 'task_management_desc'
+  | 'client_work_requests_title'
+  | 'client_work_requests_desc'
+  | 'no_requests_yet'
+  // Common
+  | 'loading'
+  | 'error'
+  | 'success';
 
-const dictionary: Record<Locale, Record<TranslationKey, string>> = {
+const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
     // Navigation
     nav_home: 'Home',
-    nav_services: 'Services for Me',
-    nav_join: 'Join Asistenku',
+    nav_services: 'Services',
+    nav_join: 'Join as Partner',
     nav_register: 'Register',
     nav_have_account: 'Already have an account?',
     nav_login: 'Login',
     // Landing page
-    hero_title: 'Live your day calmly,\nsupported by your Assistant neatly.',
-    hero_subtitle: 'Asistenku is here to accompany your daily life — so your energy can be used for more important things.',
-    hero_cta_start: 'Start from here',
-    hero_cta_login: 'Go to Workspace',
-    unique_needs_title: 'Unique Needs',
-    unique_needs_desc: 'Everyone has different life and business phases. We understand that there is no one-size-fits-all solution. Asistenku is here to accompany you in a way that suits your current needs.',
-    services_title: 'Services for Me',
-    services_subtitle: 'Choose a service that suits your current life and business phase',
-    service_tenang_title: 'Calm 🧘',
-    service_tenang_desc: 'When you are busy in a positive sense, you want to be calmer in your daily life. Your assistant accompanies routine matters, so your energy can return to other things—that are important to you.',
-    service_tenang_price: 'Starting from Rp 3,500,000 / month',
-    service_rapi_title: 'Neat 🗂️',
-    service_rapi_desc: 'When your life is calmer, you start to organize and balance your personal and business life. So that they do not collide with each other, and you can still take time for what is important to you—whether it is family, partner, yourself, or just stop for a moment.',
-    service_rapi_price: 'Starting from Rp 5,000,000 / month',
-    service_fokus_title: 'Focus 🎯',
-    service_fokus_desc: 'When everything starts to be neat, you want to keep your attention on the most important things. Not because of lack of hard work, but because you need space to think, decide, and move without being distracted by small things that drain focus.',
-    service_fokus_price: 'Starting from Rp 8,500,000 / month',
-    service_jaga_title: 'Guard 🛡️',
-    service_jaga_desc: 'When the business is running, you want to keep it stable and improving—without having to monitor constantly. There is someone who ensures the details are handled neatly, so you do not have to deal with people who come and go.',
-    service_jaga_price: 'Starting from Rp 12,000,000 / month',
-    service_cta: 'Let\'s talk first',
-    compare_title: 'Bear Alone or Accompanied?',
-    compare_alone_title: 'Bear Alone',
-    compare_alone_1: '• You handle all the details yourself—from small to big.',
-    compare_alone_2: '• Energy is drained for routines that can be delegated.',
-    compare_alone_3: '• Time to think and rest is reduced.',
-    compare_alone_4: '• Risk of burnout increases.',
-    compare_together_title: 'Accompanied',
-    compare_together_1: '• Someone helps with routines and operational details.',
-    compare_together_2: '• You can focus on what is important.',
-    compare_together_3: '• More time to think, decide, and rest.',
-    compare_together_4: '• Burnout risk is reduced.',
-    compare_cta: 'Let\'s talk first',
+    hero_title: 'Your Personal Assistant for Business Growth',
+    hero_subtitle: 'Focus on what matters. Let Asistenku handle the rest.',
+    hero_cta_start: 'Get Started',
+    hero_cta_login: 'Login',
+    unique_needs_title: 'Every business has unique needs',
+    unique_needs_desc: 'Choose the service package that fits your business stage and goals.',
+    services_title: 'Our Services',
+    services_subtitle: 'Flexible packages designed for your business needs',
+    service_tenang_title: 'TENANG',
+    service_tenang_desc: 'Perfect for startups and small businesses. Get essential administrative support to keep your business running smoothly.',
+    service_tenang_price: 'Starting from IDR 2.5M/month',
+    service_rapi_title: 'RAPI',
+    service_rapi_desc: 'Ideal for growing businesses. Comprehensive support for operations, documentation, and customer service.',
+    service_rapi_price: 'Starting from IDR 5M/month',
+    service_fokus_title: 'FOKUS',
+    service_fokus_desc: 'For established businesses. Dedicated team for project management, research, and strategic initiatives.',
+    service_fokus_price: 'Starting from IDR 10M/month',
+    service_jaga_title: 'JAGA',
+    service_jaga_desc: 'Premium service for enterprises. Full-time dedicated assistant for executive support and business development.',
+    service_jaga_price: 'Starting from IDR 20M/month',
+    service_cta: 'Contact Us',
+    compare_title: 'Why Choose Asistenku?',
+    compare_alone_title: 'Working Alone',
+    compare_alone_1: 'Overwhelmed with admin tasks',
+    compare_alone_2: 'Missing growth opportunities',
+    compare_alone_3: 'Inconsistent documentation',
+    compare_alone_4: 'Limited capacity',
+    compare_together_title: 'With Asistenku',
+    compare_together_1: 'Focus on core business',
+    compare_together_2: 'Capture every opportunity',
+    compare_together_3: 'Professional documentation',
+    compare_together_4: 'Scalable support',
+    compare_cta: 'Start Your Journey',
     faq_title: 'Frequently Asked Questions',
-    faq_q1: 'What is Asistenku?',
-    faq_a1: 'Asistenku is a service that provides personal and business assistants to help you with daily routines and operational details.',
-    faq_q2: 'How does it work?',
-    faq_a2: 'You choose a service package that suits your needs, and we will assign an assistant to help you with your daily tasks.',
-    faq_q3: 'How much does it cost?',
-    faq_a3: 'Prices vary depending on the service package you choose. Please contact us for more information.',
-    join_title: 'Join as Partner',
-    join_benefit_1: '• Flexible working hours',
-    join_benefit_2: '• Competitive compensation',
-    join_benefit_3: '• Professional development',
-    join_benefit_4: '• Supportive community',
-    join_cta: 'Join now',
+    faq_q1: 'How does Asistenku work?',
+    faq_a1: 'Simply choose your service package, and we will match you with a dedicated assistant who understands your business needs.',
+    faq_q2: 'Can I change my package later?',
+    faq_a2: 'Yes! You can upgrade or adjust your package as your business grows.',
+    faq_q3: 'What if I need specialized skills?',
+    faq_a3: 'Our team includes specialists in various fields. We will match you with the right expertise.',
+    join_title: 'Join Our Partner Network',
+    join_benefit_1: 'Flexible working hours',
+    join_benefit_2: 'Competitive compensation',
+    join_benefit_3: 'Skill development opportunities',
+    join_benefit_4: 'Supportive community',
+    join_cta: 'Apply Now',
     // Internal access
     internal_access_title: 'Internal Access',
     internal_access_hint: 'Enter your access code to continue',
     access_code_label: 'Access Code',
     continue: 'Continue',
     back: 'Back',
-    invalid_code_ui: 'Invalid access code',
+    invalid_code_ui: 'Invalid access code. Please try again.',
     // Login
-    login_title: 'Login',
-    login_subtitle: 'Choose your role to continue',
+    login_title: 'Welcome Back',
+    login_subtitle: 'Choose your workspace to continue',
     login_as_client: 'Login as Client',
     login_as_partner: 'Login as Partner',
     workspace_btn: 'My Workspace',
-    public_mismatch_ui: 'Role mismatch. Please login with the correct role.',
+    public_mismatch_ui: 'Your account role does not match. Please use the correct login option.',
     // Registration
-    register_title: 'Register',
-    register_subtitle: 'Create your account',
+    register_title: 'Create Your Account',
+    register_subtitle: 'Join Asistenku today',
     tab_client: 'Client',
     tab_partner: 'Partner',
     register_button: 'Register',
@@ -335,250 +288,203 @@ const dictionary: Record<Locale, Record<TranslationKey, string>> = {
     logging_in: 'Logging in...',
     login_required_hint: 'Please login with Internet Identity first',
     already_have_account: 'Already have an account?',
-    registration_success_title: 'Registration Successful',
+    registration_success_title: 'Registration Successful!',
     registration_success_client: 'Your client account has been created successfully.',
-    registration_success_partner: 'Your partner account has been created successfully.',
+    registration_success_partner: 'Your partner application has been submitted. We will review and contact you soon.',
     your_id: 'Your ID',
     go_to_dashboard: 'Go to Dashboard',
-    error_already_registered: 'You are already registered',
-    error_registration_failed: 'Registration failed',
+    error_already_registered: 'You already have an account. Please login instead.',
+    error_registration_failed: 'Registration failed. Please try again.',
     // Internal gate guard
-    internal_locked_title: 'Access Restricted',
-    internal_locked_hint: 'You need to pass the internal gate first',
-    go_to_internal: 'Go to Internal Gate',
+    internal_locked_title: 'Access Required',
+    internal_locked_hint: 'You need to enter the internal access code first',
+    go_to_internal: 'Go to Internal Access',
     // Access gate
     verify_access_title: 'Verify Access',
     verify_access_hint: 'Click the button below to verify your access',
     verify_and_open: 'Verify and Open',
     // Client dashboard
     workspace_title: 'Workspace',
-    client_greeting: 'Hello, {name}',
+    client_greeting: 'Hello, {name}!',
     client_greeting_desc: 'Welcome to your workspace',
     tab_summary: 'Summary',
     tab_profile: 'Profile',
     tab_services: 'My Services',
-    tab_service_request: 'Service Request',
+    tab_my_requests: 'My Requests',
     tab_delegation: 'Delegation',
     summary_title: 'Summary',
     summary_desc: 'Overview of your account',
-    summary_welcome: 'Welcome to your workspace',
+    summary_welcome: 'Welcome to your client dashboard. Here you can manage your services and requests.',
     profile_title: 'Profile',
     profile_desc: 'Your account information',
-    services_my_title: 'My Services',
-    services_my_desc: 'List of your active services',
-    services_none: 'No active services',
     delegation_title: 'Delegation',
-    delegation_locked_desc: 'You do not have an active service. Please contact admin.',
-    contact_admin: 'Contact Admin',
     // Service Request
-    service_request_form_title: 'Submit Service Request',
-    service_request_form_desc: 'Fill in the form below to submit a new service request',
+    service_request_form_title: 'Submit Task Request',
+    service_request_form_desc: 'Tell us what you need help with',
     service_request_title_label: 'Request Title',
-    service_request_title_placeholder: 'Enter a brief title for your request',
-    service_request_description_label: 'Request Description',
-    service_request_description_placeholder: 'Describe your request in detail',
+    service_request_title_placeholder: 'e.g., Create monthly report',
+    service_request_description_label: 'Description',
+    service_request_description_placeholder: 'Describe your request in detail...',
     service_request_type_label: 'Request Type',
-    request_type_normal: 'Normal',
-    request_type_normal_helper: 'Suitable for work with completion time more than 2 days.',
-    request_type_normal_label: 'Normal',
-    request_type_priority: 'Priority',
-    request_type_priority_helper: 'Suitable if work needs to be completed in about 1 day.',
-    request_type_priority_label: 'Priority',
-    request_type_urgent: 'Urgent',
-    request_type_urgent_helper: 'For urgent needs, target under 12 hours. Availability will be confirmed by Asistenmu.',
-    request_type_urgent_label: 'Urgent',
     service_request_deadline_label: 'Deadline (Optional)',
-    service_request_info_note: 'The time estimates above are initial guidance. The final number of services and schedule will be determined by Asistenmu after review and confirmation.',
+    service_request_info_note: 'Your Asistenmu will contact you via WhatsApp to discuss the details.',
     service_request_submit: 'Submit Request',
     service_request_submitting: 'Submitting...',
     service_request_list_title: 'My Requests',
-    service_request_list_desc: 'List of your submitted service requests',
-    service_request_list_empty: 'No requests yet',
-    status_requested: 'REQUESTED',
+    service_request_list_desc: 'Track your submitted requests',
+    service_request_list_empty: 'No requests yet. Submit your first request above.',
+    request_type_normal: 'Normal',
+    request_type_normal_label: 'Normal',
+    request_type_normal_helper: 'Standard processing time (3-5 business days)',
+    request_type_priority: 'Priority',
+    request_type_priority_label: 'Priority',
+    request_type_priority_helper: 'Faster processing (1-2 business days)',
+    request_type_urgent: 'Urgent',
+    request_type_urgent_label: 'Urgent',
+    request_type_urgent_helper: 'Immediate attention (within 24 hours)',
+    status_requested: 'Requested',
     deadline_label: 'Deadline',
-    loading: 'Loading...',
     // Partner dashboard
-    partner_pending_alert: 'Your account is pending approval',
+    partner_greeting: 'Hello, {name}!',
+    partner_greeting_desc: 'Welcome to your partner workspace',
     partner_summary_title: 'Summary',
-    partner_summary_desc: 'Overview of your account',
-    partner_summary_welcome: 'Welcome to your workspace',
+    partner_summary_desc: 'Overview of your tasks and earnings',
+    partner_summary_welcome: 'Welcome to your partner dashboard.',
     partner_profile_title: 'Profile',
-    partner_profile_desc: 'Your account information',
-    partner_work_title: 'My Work',
-    partner_work_desc: 'List of your assigned tasks',
-    partner_income_title: 'Income',
-    partner_financial_title: 'Financial',
-    partner_financial_desc: 'Your financial information',
-    partner_balance_title: 'Balance',
-    partner_balance_desc: 'Your current balance',
-    partner_cert_title: 'Certification',
-    partner_cert_desc: 'Your certifications',
-    partner_academy_title: 'Academy',
-    partner_academy_desc: 'Training and development',
-    partner_academy_content: 'Coming soon',
-    // Admin dashboard
-    admin_dashboard_title: 'Admin Dashboard',
-    admin_dashboard_desc: 'Manage your organization',
-    admin_summary_title: 'Summary',
-    admin_summary_desc: 'Overview of your organization',
-    admin_summary_welcome: 'Welcome to admin dashboard',
-    admin_users_title: 'User Management',
-    admin_users_desc: 'Manage users',
-    admin_internal_access_title: 'Internal Access',
-    admin_internal_access_desc: 'Manage internal access codes',
-    admin_client_title: 'Clients',
-    admin_client_desc: 'Manage clients',
-    admin_client_placeholder: 'Client management coming soon',
-    admin_partner_title: 'Partners',
-    admin_partner_desc: 'Manage partners',
-    admin_partner_placeholder: 'Partner management coming soon',
-    admin_services_title: 'Service Management',
-    admin_services_desc: 'Manage services',
-    admin_services_placeholder: 'Service management coming soon',
-    admin_task_title: 'Task Management',
-    admin_task_desc: 'Manage tasks',
-    admin_task_placeholder: 'Task management coming soon',
-    admin_access_title: 'Access',
-    // Superadmin dashboard
-    superadmin_dashboard_title: 'Superadmin Dashboard',
-    superadmin_dashboard_desc: 'Full system control',
-    superadmin_summary_title: 'Summary',
-    superadmin_summary_desc: 'System overview',
-    superadmin_summary_welcome: 'Welcome to superadmin dashboard',
-    superadmin_users_title: 'User Management',
-    superadmin_users_desc: 'Manage all users',
-    superadmin_users_placeholder: 'User management coming soon',
-    superadmin_internal_access_title: 'Internal Access',
-    superadmin_internal_access_desc: 'Manage internal access codes',
-    superadmin_financial_title: 'Financial',
-    superadmin_financial_desc: 'Financial overview',
-    superadmin_financial_placeholder: 'Financial management coming soon',
-    superadmin_internal_title: 'Internal',
-    superadmin_internal_desc: 'Internal management',
-    superadmin_internal_placeholder: 'Internal management coming soon',
-    superadmin_roles_title: 'Roles',
-    superadmin_roles_desc: 'Role management',
-    superadmin_roles_placeholder: 'Role management coming soon',
-    superadmin_access_title: 'Access',
-    superadmin_audit_title: 'Audit Log',
-    superadmin_audit_desc: 'System audit log',
-    // Internal dashboards
-    asistenmu_workspace_title: 'Asistenmu Workspace',
-    asistenmu_dashboard_title: 'Asistenmu Dashboard',
-    asistenmu_dashboard_desc: 'Manage your tasks',
-    asistenmu_dashboard_title_card: 'Dashboard',
-    asistenmu_dashboard_desc_card: 'Your workspace',
-    asistenmu_dashboard_placeholder: 'Dashboard coming soon',
-    supervisor_workspace_title: 'Supervisor Workspace',
-    supervisor_dashboard_title: 'Supervisor Dashboard',
-    supervisor_dashboard_desc: 'Monitor team performance',
-    supervisor_dashboard_title_card: 'Dashboard',
-    supervisor_dashboard_desc_card: 'Your workspace',
-    supervisor_dashboard_placeholder: 'Dashboard coming soon',
-    management_workspace_title: 'Management Workspace',
-    management_dashboard_title: 'Management Dashboard',
-    management_dashboard_desc: 'Strategic overview',
-    management_dashboard_title_card: 'Dashboard',
-    management_dashboard_desc_card: 'Your workspace',
-    management_dashboard_placeholder: 'Dashboard coming soon',
-    finance_workspace_title: 'Finance Workspace',
-    finance_dashboard_title: 'Finance Dashboard',
-    finance_dashboard_desc: 'Financial management',
-    finance_dashboard_title_card: 'Dashboard',
-    finance_dashboard_desc_card: 'Your workspace',
-    finance_dashboard_placeholder: 'Dashboard coming soon',
-    // Menu labels
+    partner_profile_desc: 'Your partner information',
     menu_summary: 'Summary',
     menu_profile: 'Profile',
     menu_work: 'Work',
     menu_income: 'Income',
-    menu_client: 'Clients',
-    menu_partner: 'Partners',
-    menu_services: 'Services',
-    menu_task: 'Tasks',
-    menu_access: 'Access',
-    menu_users: 'Users',
-    menu_financial: 'Financial',
-    menu_internal: 'Internal',
-    menu_roles: 'Roles',
-    menu_audit: 'Audit',
-    menu_internal_access: 'Internal Access',
-    menu_audit_log: 'Audit Log',
-    // Common labels
-    coming_soon: 'Coming soon',
+    partner_pending_alert: 'Your application is pending review.',
+    partner_work_title: 'Work',
+    partner_work_desc: 'Your tasks and assignments',
+    partner_financial_title: 'Financial',
+    partner_financial_desc: 'Your earnings and balance',
+    partner_balance_title: 'Balance',
+    partner_balance_desc: 'Current balance',
+    partner_cert_title: 'Certifications',
+    partner_cert_desc: 'Your certifications',
+    // Admin dashboard
+    admin_summary_title: 'Admin Dashboard',
+    admin_summary_desc: 'System overview and management',
+    admin_summary_welcome: 'Welcome to the admin dashboard.',
+    // Asistenmu dashboard
+    asistenmu_workspace_title: 'Asistenmu Workspace',
+    asistenmu_dashboard_title: 'Asistenmu Dashboard',
+    asistenmu_dashboard_desc: 'Manage your tasks and clients',
+    asistenmu_dashboard_title_card: 'Dashboard',
+    asistenmu_dashboard_desc_card: 'Your workspace overview',
+    asistenmu_dashboard_placeholder: 'Dashboard features coming soon.',
+    // Finance dashboard
+    finance_workspace_title: 'Finance Workspace',
+    finance_dashboard_title: 'Finance Dashboard',
+    finance_dashboard_desc: 'Financial management and reporting',
+    finance_dashboard_title_card: 'Dashboard',
+    finance_dashboard_desc_card: 'Financial overview',
+    finance_dashboard_placeholder: 'Dashboard features coming soon.',
+    // Management dashboard
+    management_workspace_title: 'Management Workspace',
+    management_dashboard_title: 'Management Dashboard',
+    management_dashboard_desc: 'Strategic oversight and reporting',
+    management_dashboard_title_card: 'Dashboard',
+    management_dashboard_desc_card: 'Management overview',
+    management_dashboard_placeholder: 'Dashboard features coming soon.',
+    // Supervisor dashboard
+    supervisor_workspace_title: 'Supervisor Workspace',
+    supervisor_dashboard_title: 'Supervisor Dashboard',
+    supervisor_dashboard_desc: 'Team oversight and task management',
+    supervisor_dashboard_title_card: 'Dashboard',
+    supervisor_dashboard_desc_card: 'Supervisor overview',
+    supervisor_dashboard_placeholder: 'Dashboard features coming soon.',
+    // Superadmin dashboard
+    superadmin_summary_title: 'Superadmin Dashboard',
+    superadmin_summary_desc: 'System overview and management',
+    superadmin_summary_welcome: 'Welcome to the superadmin dashboard.',
+    superadmin_audit_title: 'Audit Log',
+    superadmin_audit_desc: 'System activity and changes',
+    task_management_title: 'Task Management',
+    task_management_desc: 'Manage and track all tasks',
+    client_work_requests_title: 'Client Work Requests',
+    client_work_requests_desc: 'View and manage client task requests',
+    no_requests_yet: 'No client requests yet.',
+    // Common
+    loading: 'Loading...',
+    error: 'Error',
+    success: 'Success',
   },
   id: {
     // Navigation
     nav_home: 'Beranda',
-    nav_services: 'Layanan untuk Saya',
-    nav_join: 'Gabung Asistenku',
+    nav_services: 'Layanan',
+    nav_join: 'Gabung sebagai Partner',
     nav_register: 'Daftar',
     nav_have_account: 'Sudah punya akun?',
     nav_login: 'Masuk',
     // Landing page
-    hero_title: 'Jalani hari dengan tenang,\ndidampingi Asistenmu dengan rapi.',
-    hero_subtitle: 'Asistenku hadir menemani keseharian Anda — agar energi bisa dipakai untuk hal yang lebih penting.',
-    hero_cta_start: 'Mulai dari sini',
-    hero_cta_login: 'Ke Ruang Kerja',
-    unique_needs_title: 'Kebutuhan yang Unik',
-    unique_needs_desc: 'Setiap orang punya fase hidup dan bisnis yang berbeda. Kami paham tidak ada solusi yang cocok untuk semua. Asistenku hadir menemani Anda dengan cara yang sesuai kebutuhan Anda saat ini.',
-    services_title: 'Layanan untuk Saya',
-    services_subtitle: 'Pilih layanan yang sesuai dengan fase hidup dan bisnis Anda saat ini',
-    service_tenang_title: 'Tenang 🧘',
-    service_tenang_desc: 'Saat Anda sibuk dalam arti positif, Anda ingin lebih tenang dalam keseharian. Asisten Anda menemani urusan rutin, agar energi bisa kembali ke hal lain—yang penting buat Anda.',
-    service_tenang_price: 'Mulai dari Rp 3.500.000 / bulan',
-    service_rapi_title: 'Rapi 🗂️',
-    service_rapi_desc: 'Saat hidup sudah lebih tenang, Anda mulai menata dan menyeimbangkan hidup personal dan bisnis. Agar tidak saling bertabrakan, dan Anda masih bisa ambil waktu untuk yang penting buat Anda—entah itu keluarga, pasangan, diri sendiri, atau sekadar berhenti sejenak.',
-    service_rapi_price: 'Mulai dari Rp 5.000.000 / bulan',
-    service_fokus_title: 'Fokus 🎯',
-    service_fokus_desc: 'Saat semua mulai rapi, Anda ingin tetap fokus pada hal yang paling penting. Bukan karena kurang kerja keras, tapi karena Anda butuh ruang untuk berpikir, memutuskan, dan bergerak tanpa terganggu hal-hal kecil yang menguras fokus.',
-    service_fokus_price: 'Mulai dari Rp 8.500.000 / bulan',
-    service_jaga_title: 'Jaga 🛡️',
-    service_jaga_desc: 'Saat bisnis sudah jalan, Anda ingin tetap stabil dan terus membaik—tanpa harus memantau terus-menerus. Ada yang memastikan detail ditangani dengan rapi, jadi Anda tidak perlu berurusan dengan orang yang datang dan pergi.',
-    service_jaga_price: 'Mulai dari Rp 12.000.000 / bulan',
-    service_cta: 'Yuk ngobrol dulu',
-    compare_title: 'Tanggung Sendiri atau Didampingi?',
-    compare_alone_title: 'Tanggung Sendiri',
-    compare_alone_1: '• Anda tangani semua detail sendiri—dari kecil sampai besar.',
-    compare_alone_2: '• Energi terkuras untuk rutinitas yang bisa didelegasikan.',
-    compare_alone_3: '• Waktu untuk berpikir dan istirahat berkurang.',
-    compare_alone_4: '• Risiko burnout meningkat.',
-    compare_together_title: 'Didampingi',
-    compare_together_1: '• Ada yang bantu rutinitas dan detail operasional.',
-    compare_together_2: '• Anda bisa fokus pada yang penting.',
-    compare_together_3: '• Lebih banyak waktu untuk berpikir, memutuskan, dan istirahat.',
-    compare_together_4: '• Risiko burnout berkurang.',
-    compare_cta: 'Yuk ngobrol dulu',
+    hero_title: 'Asisten Pribadi untuk Pertumbuhan Bisnis Anda',
+    hero_subtitle: 'Fokus pada yang penting. Biarkan Asistenku mengurus sisanya.',
+    hero_cta_start: 'Mulai Sekarang',
+    hero_cta_login: 'Masuk',
+    unique_needs_title: 'Setiap bisnis punya kebutuhan unik',
+    unique_needs_desc: 'Pilih paket layanan yang sesuai dengan tahap dan tujuan bisnis Anda.',
+    services_title: 'Layanan Kami',
+    services_subtitle: 'Paket fleksibel yang dirancang untuk kebutuhan bisnis Anda',
+    service_tenang_title: 'TENANG',
+    service_tenang_desc: 'Sempurna untuk startup dan bisnis kecil. Dapatkan dukungan administratif penting untuk menjaga bisnis Anda berjalan lancar.',
+    service_tenang_price: 'Mulai dari Rp 2,5 juta/bulan',
+    service_rapi_title: 'RAPI',
+    service_rapi_desc: 'Ideal untuk bisnis yang berkembang. Dukungan komprehensif untuk operasi, dokumentasi, dan layanan pelanggan.',
+    service_rapi_price: 'Mulai dari Rp 5 juta/bulan',
+    service_fokus_title: 'FOKUS',
+    service_fokus_desc: 'Untuk bisnis yang sudah mapan. Tim khusus untuk manajemen proyek, riset, dan inisiatif strategis.',
+    service_fokus_price: 'Mulai dari Rp 10 juta/bulan',
+    service_jaga_title: 'JAGA',
+    service_jaga_desc: 'Layanan premium untuk perusahaan. Asisten khusus penuh waktu untuk dukungan eksekutif dan pengembangan bisnis.',
+    service_jaga_price: 'Mulai dari Rp 20 juta/bulan',
+    service_cta: 'Hubungi Kami',
+    compare_title: 'Mengapa Memilih Asistenku?',
+    compare_alone_title: 'Bekerja Sendiri',
+    compare_alone_1: 'Kewalahan dengan tugas admin',
+    compare_alone_2: 'Kehilangan peluang pertumbuhan',
+    compare_alone_3: 'Dokumentasi tidak konsisten',
+    compare_alone_4: 'Kapasitas terbatas',
+    compare_together_title: 'Dengan Asistenku',
+    compare_together_1: 'Fokus pada bisnis inti',
+    compare_together_2: 'Tangkap setiap peluang',
+    compare_together_3: 'Dokumentasi profesional',
+    compare_together_4: 'Dukungan yang dapat diskalakan',
+    compare_cta: 'Mulai Perjalanan Anda',
     faq_title: 'Pertanyaan yang Sering Diajukan',
-    faq_q1: 'Apa itu Asistenku?',
-    faq_a1: 'Asistenku adalah layanan yang menyediakan asisten personal dan bisnis untuk membantu Anda dengan rutinitas harian dan detail operasional.',
-    faq_q2: 'Bagaimana cara kerjanya?',
-    faq_a2: 'Anda memilih paket layanan yang sesuai dengan kebutuhan Anda, dan kami akan menugaskan asisten untuk membantu Anda dengan tugas harian Anda.',
-    faq_q3: 'Berapa biayanya?',
-    faq_a3: 'Harga bervariasi tergantung pada paket layanan yang Anda pilih. Silakan hubungi kami untuk informasi lebih lanjut.',
-    join_title: 'Gabung sebagai Partner',
-    join_benefit_1: '• Jam kerja fleksibel',
-    join_benefit_2: '• Kompensasi kompetitif',
-    join_benefit_3: '• Pengembangan profesional',
-    join_benefit_4: '• Komunitas yang mendukung',
-    join_cta: 'Gabung sekarang',
+    faq_q1: 'Bagaimana cara kerja Asistenku?',
+    faq_a1: 'Cukup pilih paket layanan Anda, dan kami akan mencocokkan Anda dengan asisten khusus yang memahami kebutuhan bisnis Anda.',
+    faq_q2: 'Bisakah saya mengubah paket saya nanti?',
+    faq_a2: 'Ya! Anda dapat meningkatkan atau menyesuaikan paket Anda seiring pertumbuhan bisnis Anda.',
+    faq_q3: 'Bagaimana jika saya membutuhkan keterampilan khusus?',
+    faq_a3: 'Tim kami mencakup spesialis di berbagai bidang. Kami akan mencocokkan Anda dengan keahlian yang tepat.',
+    join_title: 'Bergabung dengan Jaringan Partner Kami',
+    join_benefit_1: 'Jam kerja fleksibel',
+    join_benefit_2: 'Kompensasi kompetitif',
+    join_benefit_3: 'Peluang pengembangan keterampilan',
+    join_benefit_4: 'Komunitas yang mendukung',
+    join_cta: 'Daftar Sekarang',
     // Internal access
     internal_access_title: 'Akses Internal',
     internal_access_hint: 'Masukkan kode akses Anda untuk melanjutkan',
     access_code_label: 'Kode Akses',
     continue: 'Lanjutkan',
     back: 'Kembali',
-    invalid_code_ui: 'Kode akses tidak valid',
+    invalid_code_ui: 'Kode akses tidak valid. Silakan coba lagi.',
     // Login
-    login_title: 'Masuk',
-    login_subtitle: 'Pilih peran Anda untuk melanjutkan',
+    login_title: 'Selamat Datang Kembali',
+    login_subtitle: 'Pilih ruang kerja Anda untuk melanjutkan',
     login_as_client: 'Masuk sebagai Klien',
     login_as_partner: 'Masuk sebagai Partner',
     workspace_btn: 'Ruang Kerja Saya',
-    public_mismatch_ui: 'Peran tidak cocok. Silakan masuk dengan peran yang benar.',
+    public_mismatch_ui: 'Peran akun Anda tidak cocok. Silakan gunakan opsi login yang benar.',
     // Registration
-    register_title: 'Daftar',
-    register_subtitle: 'Buat akun Anda',
+    register_title: 'Buat Akun Anda',
+    register_subtitle: 'Bergabung dengan Asistenku hari ini',
     tab_client: 'Klien',
     tab_partner: 'Partner',
     register_button: 'Daftar',
@@ -586,194 +492,144 @@ const dictionary: Record<Locale, Record<TranslationKey, string>> = {
     logging_in: 'Masuk...',
     login_required_hint: 'Silakan masuk dengan Internet Identity terlebih dahulu',
     already_have_account: 'Sudah punya akun?',
-    registration_success_title: 'Pendaftaran Berhasil',
+    registration_success_title: 'Pendaftaran Berhasil!',
     registration_success_client: 'Akun klien Anda telah berhasil dibuat.',
-    registration_success_partner: 'Akun partner Anda telah berhasil dibuat.',
+    registration_success_partner: 'Aplikasi partner Anda telah dikirim. Kami akan meninjau dan menghubungi Anda segera.',
     your_id: 'ID Anda',
     go_to_dashboard: 'Ke Dashboard',
-    error_already_registered: 'Anda sudah terdaftar',
-    error_registration_failed: 'Pendaftaran gagal',
+    error_already_registered: 'Anda sudah memiliki akun. Silakan masuk.',
+    error_registration_failed: 'Pendaftaran gagal. Silakan coba lagi.',
     // Internal gate guard
-    internal_locked_title: 'Akses Terbatas',
-    internal_locked_hint: 'Anda perlu melewati gerbang internal terlebih dahulu',
-    go_to_internal: 'Ke Gerbang Internal',
+    internal_locked_title: 'Akses Diperlukan',
+    internal_locked_hint: 'Anda perlu memasukkan kode akses internal terlebih dahulu',
+    go_to_internal: 'Ke Akses Internal',
     // Access gate
     verify_access_title: 'Verifikasi Akses',
     verify_access_hint: 'Klik tombol di bawah untuk memverifikasi akses Anda',
     verify_and_open: 'Verifikasi dan Buka',
     // Client dashboard
     workspace_title: 'Ruang Kerja',
-    client_greeting: 'Halo, {name}',
+    client_greeting: 'Halo, {name}!',
     client_greeting_desc: 'Selamat datang di ruang kerja Anda',
     tab_summary: 'Ringkasan',
     tab_profile: 'Profil',
     tab_services: 'Layanan Saya',
-    tab_service_request: 'Permintaan Layanan',
+    tab_my_requests: 'Permintaan Saya',
     tab_delegation: 'Delegasi',
     summary_title: 'Ringkasan',
     summary_desc: 'Ikhtisar akun Anda',
-    summary_welcome: 'Selamat datang di ruang kerja Anda',
+    summary_welcome: 'Selamat datang di dashboard klien Anda. Di sini Anda dapat mengelola layanan dan permintaan Anda.',
     profile_title: 'Profil',
     profile_desc: 'Informasi akun Anda',
-    services_my_title: 'Layanan Saya',
-    services_my_desc: 'Daftar layanan aktif Anda',
-    services_none: 'Tidak ada layanan aktif',
     delegation_title: 'Delegasi',
-    delegation_locked_desc: 'Anda belum mempunyai layanan aktif. Silahkan hubungi admin.',
-    contact_admin: 'Hubungi Admin',
     // Service Request
-    service_request_form_title: 'Kirim Permintaan Layanan',
-    service_request_form_desc: 'Isi formulir di bawah untuk mengajukan permintaan layanan baru',
+    service_request_form_title: 'Kirim permintaan tugas',
+    service_request_form_desc: 'Beritahu kami apa yang Anda butuhkan',
     service_request_title_label: 'Judul Permintaan',
-    service_request_title_placeholder: 'Masukkan judul singkat untuk permintaan Anda',
-    service_request_description_label: 'Deskripsi Permintaan',
-    service_request_description_placeholder: 'Jelaskan permintaan Anda secara detail',
-    service_request_type_label: 'Tipe Permintaan',
-    request_type_normal: 'Normal',
-    request_type_normal_helper: 'Cocok untuk pekerjaan dengan waktu pengerjaan lebih dari 2 hari.',
-    request_type_normal_label: 'Normal',
-    request_type_priority: 'Prioritas',
-    request_type_priority_helper: 'Cocok jika pekerjaan perlu diselesaikan dalam ±1 hari.',
-    request_type_priority_label: 'Prioritas',
-    request_type_urgent: 'Urgent',
-    request_type_urgent_helper: 'Untuk kebutuhan mendesak, target < 12 jam. Ketersediaan akan dikonfirmasi oleh Asistenmu.',
-    request_type_urgent_label: 'Urgent',
-    service_request_deadline_label: 'Deadline (Opsional)',
-    service_request_info_note: 'Estimasi waktu di atas adalah panduan awal. Jumlah layanan dan jadwal final akan ditentukan oleh Asistenmu setelah review dan konfirmasi.',
+    service_request_title_placeholder: 'contoh: Buat laporan bulanan',
+    service_request_description_label: 'Deskripsi',
+    service_request_description_placeholder: 'Jelaskan permintaan Anda secara detail...',
+    service_request_type_label: 'Jenis Permintaan',
+    service_request_deadline_label: 'Tenggat Waktu (Opsional)',
+    service_request_info_note: 'Asistenmu Anda akan menghubungi Anda melalui WhatsApp untuk membahas detailnya.',
     service_request_submit: 'Kirim Permintaan',
     service_request_submitting: 'Mengirim...',
     service_request_list_title: 'Permintaan Saya',
-    service_request_list_desc: 'Daftar permintaan layanan yang telah Anda kirim',
-    service_request_list_empty: 'Belum ada permintaan',
-    status_requested: 'REQUESTED',
-    deadline_label: 'Deadline',
-    loading: 'Memuat...',
+    service_request_list_desc: 'Lacak permintaan yang telah Anda kirim',
+    service_request_list_empty: 'Belum ada permintaan. Kirim permintaan pertama Anda di atas.',
+    request_type_normal: 'Normal',
+    request_type_normal_label: 'Normal',
+    request_type_normal_helper: 'Waktu pemrosesan standar (3-5 hari kerja)',
+    request_type_priority: 'Prioritas',
+    request_type_priority_label: 'Prioritas',
+    request_type_priority_helper: 'Pemrosesan lebih cepat (1-2 hari kerja)',
+    request_type_urgent: 'Mendesak',
+    request_type_urgent_label: 'Mendesak',
+    request_type_urgent_helper: 'Perhatian segera (dalam 24 jam)',
+    status_requested: 'Diminta',
+    deadline_label: 'Tenggat',
     // Partner dashboard
-    partner_pending_alert: 'Akun Anda menunggu persetujuan',
+    partner_greeting: 'Halo, {name}!',
+    partner_greeting_desc: 'Selamat datang di ruang kerja partner Anda',
     partner_summary_title: 'Ringkasan',
-    partner_summary_desc: 'Ikhtisar akun Anda',
-    partner_summary_welcome: 'Selamat datang di ruang kerja Anda',
+    partner_summary_desc: 'Ikhtisar tugas dan penghasilan Anda',
+    partner_summary_welcome: 'Selamat datang di dashboard partner Anda.',
     partner_profile_title: 'Profil',
-    partner_profile_desc: 'Informasi akun Anda',
-    partner_work_title: 'Pekerjaan Saya',
-    partner_work_desc: 'Daftar tugas yang ditugaskan kepada Anda',
-    partner_income_title: 'Pendapatan',
-    partner_financial_title: 'Keuangan',
-    partner_financial_desc: 'Informasi keuangan Anda',
-    partner_balance_title: 'Saldo',
-    partner_balance_desc: 'Saldo Anda saat ini',
-    partner_cert_title: 'Sertifikasi',
-    partner_cert_desc: 'Sertifikasi Anda',
-    partner_academy_title: 'Akademi',
-    partner_academy_desc: 'Pelatihan dan pengembangan',
-    partner_academy_content: 'Segera hadir',
-    // Admin dashboard
-    admin_dashboard_title: 'Dashboard Admin',
-    admin_dashboard_desc: 'Kelola organisasi Anda',
-    admin_summary_title: 'Ringkasan',
-    admin_summary_desc: 'Ikhtisar organisasi Anda',
-    admin_summary_welcome: 'Selamat datang di dashboard admin',
-    admin_users_title: 'Manajemen Pengguna',
-    admin_users_desc: 'Kelola pengguna',
-    admin_internal_access_title: 'Akses Internal',
-    admin_internal_access_desc: 'Kelola kode akses internal',
-    admin_client_title: 'Klien',
-    admin_client_desc: 'Kelola klien',
-    admin_client_placeholder: 'Manajemen klien segera hadir',
-    admin_partner_title: 'Partner',
-    admin_partner_desc: 'Kelola partner',
-    admin_partner_placeholder: 'Manajemen partner segera hadir',
-    admin_services_title: 'Manajemen Layanan',
-    admin_services_desc: 'Kelola layanan',
-    admin_services_placeholder: 'Manajemen layanan segera hadir',
-    admin_task_title: 'Manajemen Tugas',
-    admin_task_desc: 'Kelola tugas',
-    admin_task_placeholder: 'Manajemen tugas segera hadir',
-    admin_access_title: 'Akses',
-    // Superadmin dashboard
-    superadmin_dashboard_title: 'Dashboard Superadmin',
-    superadmin_dashboard_desc: 'Kontrol sistem penuh',
-    superadmin_summary_title: 'Ringkasan',
-    superadmin_summary_desc: 'Ikhtisar sistem',
-    superadmin_summary_welcome: 'Selamat datang di dashboard superadmin',
-    superadmin_users_title: 'Manajemen Pengguna',
-    superadmin_users_desc: 'Kelola semua pengguna',
-    superadmin_users_placeholder: 'Manajemen pengguna segera hadir',
-    superadmin_internal_access_title: 'Akses Internal',
-    superadmin_internal_access_desc: 'Kelola kode akses internal',
-    superadmin_financial_title: 'Keuangan',
-    superadmin_financial_desc: 'Ikhtisar keuangan',
-    superadmin_financial_placeholder: 'Manajemen keuangan segera hadir',
-    superadmin_internal_title: 'Internal',
-    superadmin_internal_desc: 'Manajemen internal',
-    superadmin_internal_placeholder: 'Manajemen internal segera hadir',
-    superadmin_roles_title: 'Peran',
-    superadmin_roles_desc: 'Manajemen peran',
-    superadmin_roles_placeholder: 'Manajemen peran segera hadir',
-    superadmin_access_title: 'Akses',
-    superadmin_audit_title: 'Log Audit',
-    superadmin_audit_desc: 'Log audit sistem',
-    // Internal dashboards
-    asistenmu_workspace_title: 'Ruang Kerja Asistenmu',
-    asistenmu_dashboard_title: 'Dashboard Asistenmu',
-    asistenmu_dashboard_desc: 'Kelola tugas Anda',
-    asistenmu_dashboard_title_card: 'Dashboard',
-    asistenmu_dashboard_desc_card: 'Ruang kerja Anda',
-    asistenmu_dashboard_placeholder: 'Dashboard segera hadir',
-    supervisor_workspace_title: 'Ruang Kerja Supervisor',
-    supervisor_dashboard_title: 'Dashboard Supervisor',
-    supervisor_dashboard_desc: 'Pantau kinerja tim',
-    supervisor_dashboard_title_card: 'Dashboard',
-    supervisor_dashboard_desc_card: 'Ruang kerja Anda',
-    supervisor_dashboard_placeholder: 'Dashboard segera hadir',
-    management_workspace_title: 'Ruang Kerja Manajemen',
-    management_dashboard_title: 'Dashboard Manajemen',
-    management_dashboard_desc: 'Ikhtisar strategis',
-    management_dashboard_title_card: 'Dashboard',
-    management_dashboard_desc_card: 'Ruang kerja Anda',
-    management_dashboard_placeholder: 'Dashboard segera hadir',
-    finance_workspace_title: 'Ruang Kerja Keuangan',
-    finance_dashboard_title: 'Dashboard Keuangan',
-    finance_dashboard_desc: 'Manajemen keuangan',
-    finance_dashboard_title_card: 'Dashboard',
-    finance_dashboard_desc_card: 'Ruang kerja Anda',
-    finance_dashboard_placeholder: 'Dashboard segera hadir',
-    // Menu labels
+    partner_profile_desc: 'Informasi partner Anda',
     menu_summary: 'Ringkasan',
     menu_profile: 'Profil',
     menu_work: 'Pekerjaan',
     menu_income: 'Pendapatan',
-    menu_client: 'Klien',
-    menu_partner: 'Partner',
-    menu_services: 'Layanan',
-    menu_task: 'Tugas',
-    menu_access: 'Akses',
-    menu_users: 'Pengguna',
-    menu_financial: 'Keuangan',
-    menu_internal: 'Internal',
-    menu_roles: 'Peran',
-    menu_audit: 'Audit',
-    menu_internal_access: 'Akses Internal',
-    menu_audit_log: 'Log Audit',
-    // Common labels
-    coming_soon: 'Segera hadir',
+    partner_pending_alert: 'Aplikasi Anda sedang ditinjau.',
+    partner_work_title: 'Pekerjaan',
+    partner_work_desc: 'Tugas dan penugasan Anda',
+    partner_financial_title: 'Keuangan',
+    partner_financial_desc: 'Penghasilan dan saldo Anda',
+    partner_balance_title: 'Saldo',
+    partner_balance_desc: 'Saldo saat ini',
+    partner_cert_title: 'Sertifikasi',
+    partner_cert_desc: 'Sertifikasi Anda',
+    // Admin dashboard
+    admin_summary_title: 'Dashboard Admin',
+    admin_summary_desc: 'Ikhtisar dan manajemen sistem',
+    admin_summary_welcome: 'Selamat datang di dashboard admin.',
+    // Asistenmu dashboard
+    asistenmu_workspace_title: 'Ruang Kerja Asistenmu',
+    asistenmu_dashboard_title: 'Dashboard Asistenmu',
+    asistenmu_dashboard_desc: 'Kelola tugas dan klien Anda',
+    asistenmu_dashboard_title_card: 'Dashboard',
+    asistenmu_dashboard_desc_card: 'Ikhtisar ruang kerja Anda',
+    asistenmu_dashboard_placeholder: 'Fitur dashboard segera hadir.',
+    // Finance dashboard
+    finance_workspace_title: 'Ruang Kerja Finance',
+    finance_dashboard_title: 'Dashboard Finance',
+    finance_dashboard_desc: 'Manajemen keuangan dan pelaporan',
+    finance_dashboard_title_card: 'Dashboard',
+    finance_dashboard_desc_card: 'Ikhtisar keuangan',
+    finance_dashboard_placeholder: 'Fitur dashboard segera hadir.',
+    // Management dashboard
+    management_workspace_title: 'Ruang Kerja Management',
+    management_dashboard_title: 'Dashboard Management',
+    management_dashboard_desc: 'Pengawasan strategis dan pelaporan',
+    management_dashboard_title_card: 'Dashboard',
+    management_dashboard_desc_card: 'Ikhtisar management',
+    management_dashboard_placeholder: 'Fitur dashboard segera hadir.',
+    // Supervisor dashboard
+    supervisor_workspace_title: 'Ruang Kerja Supervisor',
+    supervisor_dashboard_title: 'Dashboard Supervisor',
+    supervisor_dashboard_desc: 'Pengawasan tim dan manajemen tugas',
+    supervisor_dashboard_title_card: 'Dashboard',
+    supervisor_dashboard_desc_card: 'Ikhtisar supervisor',
+    supervisor_dashboard_placeholder: 'Fitur dashboard segera hadir.',
+    // Superadmin dashboard
+    superadmin_summary_title: 'Dashboard Superadmin',
+    superadmin_summary_desc: 'Ikhtisar dan manajemen sistem',
+    superadmin_summary_welcome: 'Selamat datang di dashboard superadmin.',
+    superadmin_audit_title: 'Log Audit',
+    superadmin_audit_desc: 'Aktivitas dan perubahan sistem',
+    task_management_title: 'Manajemen Task',
+    task_management_desc: 'Kelola dan lacak semua task',
+    client_work_requests_title: 'Permintaan Pekerjaan Client',
+    client_work_requests_desc: 'Lihat dan kelola permintaan task dari client',
+    no_requests_yet: 'Belum ada permintaan dari client.',
+    // Common
+    loading: 'Memuat...',
+    error: 'Kesalahan',
+    success: 'Berhasil',
   },
 };
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return dictionary[locale][key] || dictionary.en[key] || key;
+  return translations[locale][key] || translations.en[key] || key;
 }
 
-export const LOCALE_STORAGE_KEY = 'asistenku_locale';
-
-// Helper functions for locale persistence
 export function getLocale(): Locale {
   if (typeof window === 'undefined') return 'en';
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+  const stored = localStorage.getItem('asistenku_locale');
   return (stored === 'id' ? 'id' : 'en') as Locale;
 }
 
 export function setLocale(locale: Locale): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  localStorage.setItem('asistenku_locale', locale);
 }

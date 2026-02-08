@@ -9,7 +9,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCreateClientServiceRequest, useGetMyClientTasks } from '@/hooks/useClientServiceRequests';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
-import { RequestType } from '@/backend';
 
 export default function ClientServiceRequestTab() {
   const { locale } = useLocale();
@@ -32,13 +31,11 @@ export default function ClientServiceRequestTab() {
       ? BigInt(new Date(clientDeadline).getTime())
       : null;
 
-    const requestTypeEnum: RequestType = RequestType[requestType];
-
     await createMutation.mutateAsync({
       title: title.trim(),
       description: description.trim(),
       clientDeadline: deadlineBigInt,
-      requestType: requestTypeEnum,
+      requestType: requestType,
     });
 
     // Reset form after success
@@ -48,8 +45,8 @@ export default function ClientServiceRequestTab() {
     setClientDeadline('');
   };
 
-  const getRequestTypeBadge = (type: RequestType) => {
-    const typeStr = String(type);
+  const getRequestTypeBadge = (type: string) => {
+    const typeStr = String(type).toUpperCase();
     if (typeStr === 'NORMAL') {
       return <Badge variant="secondary">{t('request_type_normal_label', locale)}</Badge>;
     }
@@ -228,7 +225,7 @@ export default function ClientServiceRequestTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                    <span>{formatDate(BigInt(task.createdAt))}</span>
+                    <span>{formatDate(task.createdAt)}</span>
                     {task.clientDeadline && (
                       <span>
                         {t('deadline_label', locale)}: {formatDate(task.clientDeadline)}

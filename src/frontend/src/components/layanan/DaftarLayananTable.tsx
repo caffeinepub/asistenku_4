@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useGetMyLayananku, useDeactivateLayananku } from '@/hooks/useLayananku';
+import { useGetMyLayananku, useDeactivateLayananku, LayanankuPublic } from '@/hooks/useLayananku';
 import LayananDetailModal from './LayananDetailModal';
 import LayananUpdateModal from './LayananUpdateModal';
 import EditAsistenmuModal from './EditAsistenmuModal';
-import type { LayanankuPublic } from '@/backend';
 
 interface DaftarLayananTableProps {
   refreshTrigger: number;
@@ -59,6 +58,10 @@ export default function DaftarLayananTable({ refreshTrigger }: DaftarLayananTabl
       asistenmuPrincipalId: layanan.asistenmuPrincipalId,
     });
     setEditAsistenmuModalOpen(true);
+  };
+
+  const handleEditAsistenmuSuccess = () => {
+    refetch();
   };
 
   const formatDate = (timestamp: bigint) => {
@@ -117,13 +120,9 @@ export default function DaftarLayananTable({ refreshTrigger }: DaftarLayananTabl
                         Detail
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleUpdateClick(layanan)}>
-                        Update
+                        Edit Share
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditAsistenmuClick(extended)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleEditAsistenmuClick(extended)}>
                         Edit Asistenmu
                       </Button>
                       <Button
@@ -154,7 +153,6 @@ export default function DaftarLayananTable({ refreshTrigger }: DaftarLayananTabl
             layanan={selectedLayanan}
             open={updateModalOpen}
             onOpenChange={setUpdateModalOpen}
-            onSuccess={() => refetch()}
           />
         </>
       )}
@@ -165,7 +163,7 @@ export default function DaftarLayananTable({ refreshTrigger }: DaftarLayananTabl
           currentAsistenmuPrincipalId={selectedLayananForAsistenmu.asistenmuPrincipalId}
           open={editAsistenmuModalOpen}
           onOpenChange={setEditAsistenmuModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={handleEditAsistenmuSuccess}
         />
       )}
     </>

@@ -1,23 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { toast } from 'sonner';
-import type { AsistenmuCandidateDTO } from '@/backend';
 
-// Get list of ASISTENMU candidates for assignment
+// Local type definition
+export interface AsistenmuCandidateDTO {
+  principalId: string;
+  name: string;
+  role: string;
+  status: string;
+}
+
+// Get ASISTENMU candidates - stubbed until backend implements
 export function useGetAsistenmuCandidates() {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<AsistenmuCandidateDTO[]>({
     queryKey: ['asistenmu-candidates'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getAsistenmuCandidates();
+      return [];
     },
     enabled: !!actor && !actorFetching,
   });
 }
 
-// Assign ASISTENMU to a Layananku
+// Assign ASISTENMU to Layananku - stubbed until backend implements
 export function useAssignAsistenmuToLayananku() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -25,17 +31,16 @@ export function useAssignAsistenmuToLayananku() {
   return useMutation({
     mutationFn: async (data: { layanankuId: string; asistenmuPrincipalId: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.assignAsistenmuToLayananku(data.layanankuId, data.asistenmuPrincipalId);
+      throw new Error('Feature not yet available');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layananku-internal'] });
-      queryClient.invalidateQueries({ queryKey: ['my-layananku'] });
       queryClient.invalidateQueries({ queryKey: ['layananku-for-client'] });
       toast.success('Asistenmu assigned successfully');
     },
     onError: (error: any) => {
-      console.error('Assign asistenmu error:', error);
-      toast.error(error.message || 'Failed to assign asistenmu');
+      console.error('Assign Asistenmu error:', error);
+      toast.error(error.message || 'Failed to assign Asistenmu');
     },
   });
 }

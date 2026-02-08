@@ -4,6 +4,9 @@ import DashboardSidebar from '@/components/DashboardSidebar';
 import AccessGate from '@/components/AccessGate';
 import LanguageToggle from '@/components/LanguageToggle';
 import ManajemenLayananView from '@/components/layanan/ManajemenLayananView';
+import UserManagementView from '@/components/superadmin/UserManagementView';
+import SuperadminTaskManagementView from '@/components/superadmin/SuperadminTaskManagementView';
+import SuperadminInternalAccessCodesSettingsView from '@/components/superadmin/SuperadminInternalAccessCodesSettingsView';
 import { useLocale } from '@/providers/LocaleProvider';
 import { t } from '@/lib/i18n';
 
@@ -42,31 +45,11 @@ function SuperadminDashboardContent() {
                         </Card>
                     )}
 
-                    {activeMenu === 'users' && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>{t('superadmin_users_title', locale)}</CardTitle>
-                                <CardDescription>{t('superadmin_users_desc', locale)}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">User management features coming soon.</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {activeMenu === 'users' && <UserManagementView />}
 
                     {activeMenu === 'layanan' && <ManajemenLayananView />}
 
-                    {activeMenu === 'task' && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Manajemen Task</CardTitle>
-                                <CardDescription>Task assignment and tracking</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">Task management features coming soon.</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {activeMenu === 'task' && <SuperadminTaskManagementView />}
 
                     {activeMenu === 'audit-log' && (
                         <Card>
@@ -80,17 +63,7 @@ function SuperadminDashboardContent() {
                         </Card>
                     )}
 
-                    {activeMenu === 'pengaturan' && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Pengaturan</CardTitle>
-                                <CardDescription>System settings and configuration</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">Settings coming soon.</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {activeMenu === 'pengaturan' && <SuperadminInternalAccessCodesSettingsView />}
                 </div>
             </main>
         </div>

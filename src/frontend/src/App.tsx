@@ -1,175 +1,199 @@
-import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { StrictMode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@/components/ui/sonner';
-import RuntimeErrorBoundary from '@/components/RuntimeErrorBoundary';
-import { LocaleProvider } from '@/providers/LocaleProvider';
+import RuntimeErrorBoundary from './components/RuntimeErrorBoundary';
+import { LocaleProvider } from './providers/LocaleProvider';
+import { Toaster } from './components/ui/sonner';
 
-import LandingPage from '@/pages/LandingPage';
-import RegisterPage from '@/pages/RegisterPage';
-import LoginPage from '@/pages/LoginPage';
-import InternalGatePage from '@/pages/InternalGatePage';
-import InternalRegisterPage from '@/pages/InternalRegisterPage';
-import InternalLoginPage from '@/pages/InternalLoginPage';
-import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
-import PartnerDashboardPage from '@/pages/partner/PartnerDashboardPage';
-import SuperadminDashboardPage from '@/pages/superadmin/SuperadminDashboardPage';
-import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
-import AsistenmuDashboardPage from '@/pages/internal/AsistenmuDashboardPage';
-import SupervisorDashboardPage from '@/pages/internal/SupervisorDashboardPage';
-import ManagementDashboardPage from '@/pages/internal/ManagementDashboardPage';
-import FinanceDashboardPage from '@/pages/internal/FinanceDashboardPage';
-import InternalRoleMismatchPage from '@/pages/internal/InternalRoleMismatchPage';
-import SyaratKetentuanPage from '@/pages/SyaratKetentuanPage';
-import KebijakanPrivasiPage from '@/pages/KebijakanPrivasiPage';
+import LandingPage from './pages/LandingPage';
+import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
+import InternalGatePage from './pages/InternalGatePage';
+import InternalRegisterPage from './pages/InternalRegisterPage';
+import InternalLoginPage from './pages/InternalLoginPage';
+import InternalRoleMismatchPage from './pages/internal/InternalRoleMismatchPage';
+import ClientDashboardPage from './pages/client/ClientDashboardPage';
+import PartnerDashboardPage from './pages/partner/PartnerDashboardPage';
+import PartnerBlockedPage from './pages/partner/PartnerBlockedPage';
+import SuperadminDashboardPage from './pages/superadmin/SuperadminDashboardPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AsistenmuDashboardPage from './pages/internal/AsistenmuDashboardPage';
+import SupervisorDashboardPage from './pages/internal/SupervisorDashboardPage';
+import ManagementDashboardPage from './pages/internal/ManagementDashboardPage';
+import FinanceDashboardPage from './pages/internal/FinanceDashboardPage';
+import CustomerServiceDashboardPage from './pages/internal/CustomerServiceDashboardPage';
+import SyaratKetentuanPage from './pages/SyaratKetentuanPage';
+import KebijakanPrivasiPage from './pages/KebijakanPrivasiPage';
 
 const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 1000 * 60 * 5,
-            refetchOnWindowFocus: false,
-            retry: 1
-        }
-    }
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 const rootRoute = createRootRoute();
 
 const indexRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/',
-    component: LandingPage
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: LandingPage,
 });
 
-const registerRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/daftar',
-    component: RegisterPage
+const daftarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/daftar',
+  component: RegisterPage,
 });
 
 const loginRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/login',
-    component: LoginPage
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
 });
 
 const internalRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/internal',
-    component: InternalGatePage
+  getParentRoute: () => rootRoute,
+  path: '/internal',
+  component: InternalGatePage,
 });
 
-const internalRegisterRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/internal/daftar',
-    component: InternalRegisterPage
+const internalDaftarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/internal/daftar',
+  component: InternalRegisterPage,
 });
 
 const internalLoginRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/internal/login',
-    component: InternalLoginPage
-});
-
-const clientRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/client',
-    component: ClientDashboardPage
-});
-
-const partnerRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/partner',
-    component: PartnerDashboardPage
-});
-
-const superadminRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/superadmin',
-    component: SuperadminDashboardPage
-});
-
-const adminRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/admin',
-    component: AdminDashboardPage
-});
-
-const asistenmuRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/asistenmu',
-    component: AsistenmuDashboardPage
-});
-
-const supervisorRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/supervisor',
-    component: SupervisorDashboardPage
-});
-
-const managementRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/management',
-    component: ManagementDashboardPage
-});
-
-const financeRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/finance',
-    component: FinanceDashboardPage
+  getParentRoute: () => rootRoute,
+  path: '/internal/login',
+  component: InternalLoginPage,
 });
 
 const internalRoleMismatchRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/internal/role-mismatch',
-    component: InternalRoleMismatchPage
+  getParentRoute: () => rootRoute,
+  path: '/internal/role-mismatch',
+  component: InternalRoleMismatchPage,
+});
+
+const clientDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/client/dashboard',
+  component: ClientDashboardPage,
+});
+
+const partnerDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/partner/dashboard',
+  component: PartnerDashboardPage,
+});
+
+const partnerBlockedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/partner/blocked',
+  component: PartnerBlockedPage,
+});
+
+const superadminDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/superadmin/dashboard',
+  component: SuperadminDashboardPage,
+});
+
+const adminDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/dashboard',
+  component: AdminDashboardPage,
+});
+
+const asistenmuDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/asistenmu/dashboard',
+  component: AsistenmuDashboardPage,
+});
+
+const supervisorDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/supervisor/dashboard',
+  component: SupervisorDashboardPage,
+});
+
+const managementDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/management/dashboard',
+  component: ManagementDashboardPage,
+});
+
+const financeDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/finance/dashboard',
+  component: FinanceDashboardPage,
+});
+
+const customerServiceDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/customer-service',
+  component: CustomerServiceDashboardPage,
 });
 
 const syaratKetentuanRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/syarat-ketentuan',
-    component: SyaratKetentuanPage
+  getParentRoute: () => rootRoute,
+  path: '/syarat-ketentuan',
+  component: SyaratKetentuanPage,
 });
 
 const kebijakanPrivasiRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/kebijakan-privasi',
-    component: KebijakanPrivasiPage
+  getParentRoute: () => rootRoute,
+  path: '/kebijakan-privasi',
+  component: KebijakanPrivasiPage,
 });
 
 const routeTree = rootRoute.addChildren([
-    indexRoute,
-    registerRoute,
-    loginRoute,
-    internalRoute,
-    internalRegisterRoute,
-    internalLoginRoute,
-    clientRoute,
-    partnerRoute,
-    superadminRoute,
-    adminRoute,
-    asistenmuRoute,
-    supervisorRoute,
-    managementRoute,
-    financeRoute,
-    internalRoleMismatchRoute,
-    syaratKetentuanRoute,
-    kebijakanPrivasiRoute
+  indexRoute,
+  daftarRoute,
+  loginRoute,
+  internalRoute,
+  internalDaftarRoute,
+  internalLoginRoute,
+  internalRoleMismatchRoute,
+  clientDashboardRoute,
+  partnerDashboardRoute,
+  partnerBlockedRoute,
+  superadminDashboardRoute,
+  adminDashboardRoute,
+  asistenmuDashboardRoute,
+  supervisorDashboardRoute,
+  managementDashboardRoute,
+  financeDashboardRoute,
+  customerServiceDashboardRoute,
+  syaratKetentuanRoute,
+  kebijakanPrivasiRoute,
 ]);
 
 const router = createRouter({ routeTree });
 
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
 export default function App() {
-    return (
-        <RuntimeErrorBoundary>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
-                <LocaleProvider>
-                    <QueryClientProvider client={queryClient}>
-                        <RouterProvider router={router} />
-                        <Toaster />
-                    </QueryClientProvider>
-                </LocaleProvider>
-            </ThemeProvider>
-        </RuntimeErrorBoundary>
-    );
+  return (
+    <StrictMode>
+      <RuntimeErrorBoundary>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <LocaleProvider>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+              <Toaster />
+            </QueryClientProvider>
+          </LocaleProvider>
+        </ThemeProvider>
+      </RuntimeErrorBoundary>
+    </StrictMode>
+  );
 }

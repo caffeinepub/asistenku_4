@@ -1,12 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useGetLayanankuForClient } from '@/hooks/useLayananku';
-import { useGetCallerUserProfile } from '@/hooks/useQueries';
-import type { ExtendedLayanankuRecord } from '@/backend';
+import { useGetLayanankuForClient, ExtendedLayanankuRecord } from '@/hooks/useLayananku';
+import { useGetCallerUser } from '@/hooks/useQueries';
 
 export default function ClientLayanankuTab() {
-  const { data: userProfile } = useGetCallerUserProfile();
-  const clientId = userProfile?.id || null;
+  const { data: user } = useGetCallerUser();
+  const clientId = user?.id || null;
   const { data: layananList = [], isLoading } = useGetLayanankuForClient(clientId);
 
   const formatDate = (timestamp: bigint) => {
@@ -15,23 +14,19 @@ export default function ClientLayanankuTab() {
 
   const getStatusBadge = (status: any) => {
     const statusStr = String(status).toLowerCase();
-    if (statusStr === 'active') {
-      return <Badge variant="default">Active</Badge>;
-    }
-    if (statusStr === 'inactive') {
-      return <Badge variant="secondary">Inactive</Badge>;
-    }
-    if (statusStr === 'expired') {
-      return <Badge variant="destructive">Expired</Badge>;
-    }
+    if (statusStr === 'active') return <Badge variant="default">Active</Badge>;
+    if (statusStr === 'inactive') return <Badge variant="secondary">Inactive</Badge>;
+    if (statusStr === 'expired') return <Badge variant="destructive">Expired</Badge>;
     return <Badge variant="outline">Unknown</Badge>;
   };
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        Loading...
-      </div>
+      <Card>
+        <CardContent className="py-8">
+          <p className="text-center text-muted-foreground">Loading...</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -39,11 +34,13 @@ export default function ClientLayanankuTab() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Layananku</CardTitle>
-          <CardDescription>Daftar layanan yang aktif</CardDescription>
+          <CardTitle>Layanan Saya</CardTitle>
+          <CardDescription>Daftar layanan yang aktif untuk Anda</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">Belum ada layanan aktif.</p>
+          <p className="text-center text-muted-foreground py-8">
+            Anda belum memiliki layanan aktif. Silakan hubungi admin untuk mengaktifkan layanan.
+          </p>
         </CardContent>
       </Card>
     );
@@ -51,41 +48,47 @@ export default function ClientLayanankuTab() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-semibold mb-1">Layananku</h2>
-        <p className="text-sm text-muted-foreground">Daftar layanan yang aktif</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {layananList.map((layanan: ExtendedLayanankuRecord) => (
-          <Card key={layanan.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{layanan.kind}</CardTitle>
-                  <CardDescription className="font-mono text-xs mt-1">{layanan.id}</CardDescription>
-                </div>
-                {getStatusBadge(layanan.status)}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
+      {layananList.map((layanan) => (
+        <Card key={layanan.id}>
+          <CardHeader>
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Asistenmu</p>
-                <p className="text-sm font-medium">{layanan.asistenmuName || '—'}</p>
+                <CardTitle>{layanan.kind}</CardTitle>
+                <CardDescription>ID: {layanan.id}</CardDescription>
+              </div>
+              {getStatusBadge(layanan.status)}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Asistenmu</p>
+                <p className="text-sm">{layanan.asistenmuName || '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Masa Aktif</p>
+                <p className="text-sm font-medium text-muted-foreground">Masa Aktif</p>
                 <p className="text-sm">
                   {formatDate(layanan.startAt)} – {formatDate(layanan.endAt)}
                 </p>
               </div>
+            </div>
+            {layanan.sharePrincipals.length > 0 && (
               <div>
-                <p className="text-xs text-muted-foreground">Share Access</p>
-                <p className="text-sm">{layanan.sharePrincipals.length} principal(s)</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Shared with ({layanan.sharePrincipals.length})
+                </p>
+                <div className="space-y-1">
+                  {layanan.sharePrincipals.map((principal, index) => (
+                    <p key={index} className="font-mono text-xs text-muted-foreground break-all">
+                      {principal}
+                    </p>
+                  ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

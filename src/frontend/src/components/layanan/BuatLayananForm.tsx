@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,25 +6,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, X } from 'lucide-react';
 import { useCreateLayananku } from '@/hooks/useLayananku';
 import { useGetAsistenmuCandidates, useAssignAsistenmuToLayananku } from '@/hooks/useAsistenmuAssignment';
-import { LayananKind } from '@/backend';
 import { toast } from 'sonner';
 
 interface BuatLayananFormProps {
   onSuccess: () => void;
+  prefilledClientId?: string | null;
 }
 
-export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
+export default function BuatLayananForm({ onSuccess, prefilledClientId }: BuatLayananFormProps) {
   const [clientId, setClientId] = useState('');
-  const [jenisLayanan, setJenisLayanan] = useState<LayananKind | ''>('');
+  const [jenisLayanan, setJenisLayanan] = useState<string>('');
   const [asistenmuPrincipalId, setAsistenmuPrincipalId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sharePrincipals, setSharePrincipals] = useState<string[]>(['']);
   const [hargaPerLayanan, setHargaPerLayanan] = useState('');
+  const [jumlahLayanan, setJumlahLayanan] = useState('');
 
   const createMutation = useCreateLayananku();
   const assignMutation = useAssignAsistenmuToLayananku();
   const { data: asistenmuCandidates = [], isLoading: loadingCandidates } = useGetAsistenmuCandidates();
+
+  // Update clientId when prefilledClientId changes
+  useEffect(() => {
+    if (prefilledClientId) {
+      setClientId(prefilledClientId);
+    }
+  }, [prefilledClientId]);
 
   const handleAddShare = () => {
     if (sharePrincipals.length < 6) {
@@ -47,7 +55,14 @@ export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!clientId || !jenisLayanan || !asistenmuPrincipalId || !startDate || !endDate) {
+    if (!clientId || !jenisLayanan || !asistenmuPrincipalId || !startDate || !endDate || !jumlahLayanan) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const qty = parseInt(jumlahLayanan);
+    if (isNaN(qty) || qty < 0) {
+      toast.error('Service quantity must be a non-negative number');
       return;
     }
 
@@ -60,7 +75,7 @@ export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
       // Step 1: Create the layananku
       const layanankuId = await createMutation.mutateAsync({
         clientId,
-        kind: jenisLayanan as LayananKind,
+        kind: jenisLayanan,
         startAt: startTimestamp,
         endAt: endTimestamp,
         sharePrincipals: filteredShares,
@@ -86,6 +101,7 @@ export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
       setEndDate('');
       setSharePrincipals(['']);
       setHargaPerLayanan('');
+      setJumlahLayanan('');
 
       onSuccess();
     } catch (error) {
@@ -108,7 +124,7 @@ export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="jenisLayanan">Jenis Layanan</Label>
-        <Select value={jenisLayanan} onValueChange={(value) => setJenisLayanan(value as LayananKind)}>
+        <Select value={jenisLayanan} onValueChange={(value) => setJenisLayanan(value)}>
           <SelectTrigger id="jenisLayanan">
             <SelectValue placeholder="Pilih jenis layanan" />
           </SelectTrigger>
@@ -168,6 +184,21 @@ export default function BuatLayananForm({ onSuccess }: BuatLayananFormProps) {
             required
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="jumlahLayanan">
+          Jumlah Layanan <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="jumlahLayanan"
+          type="number"
+          min="0"
+          value={jumlahLayanan}
+          onChange={(e) => setJumlahLayanan(e.target.value)}
+          placeholder="0"
+          required
+        />
       </div>
 
       <div className="space-y-2">

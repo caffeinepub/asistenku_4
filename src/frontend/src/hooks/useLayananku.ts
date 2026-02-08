@@ -1,9 +1,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { toast } from 'sonner';
-import type { LayanankuRecord, LayanankuPublic, ExtendedLayanankuRecord, LayananKind } from '@/backend';
 
-// Create Layananku mutation
+// Local type definitions since backend doesn't export these yet
+export interface LayanankuRecord {
+  id: string;
+  kind: string;
+  startAt: bigint;
+  endAt: bigint;
+  status: string;
+  sharePrincipals: string[];
+  hargaPerLayanan: bigint;
+  clientId: string;
+  createdAt: bigint;
+  updatedAt: bigint;
+  asistenmuPrincipalId: string | null;
+  asistenmuNameSnapshot: string | null;
+}
+
+export interface LayanankuPublic {
+  id: string;
+  kind: string;
+  startAt: bigint;
+  endAt: bigint;
+  status: string;
+  sharePrincipals: string[];
+  createdAt: bigint;
+  updatedAt: bigint;
+}
+
+export interface ExtendedLayanankuRecord {
+  id: string;
+  kind: string;
+  startAt: bigint;
+  endAt: bigint;
+  status: string;
+  sharePrincipals: string[];
+  hargaPerLayanan: bigint;
+  clientId: string;
+  createdAt: bigint;
+  updatedAt: bigint;
+  asistenmuPrincipalId: string | null;
+  asistenmuName: string | null;
+}
+
+// Create Layananku mutation - stubbed until backend implements
 export function useCreateLayananku() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -11,21 +52,15 @@ export function useCreateLayananku() {
   return useMutation({
     mutationFn: async (data: {
       clientId: string;
-      kind: LayananKind;
+      kind: string;
       startAt: bigint;
       endAt: bigint;
       sharePrincipals: string[];
       hargaPerLayanan: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createLayanankuForClient(
-        data.clientId,
-        data.kind,
-        data.startAt,
-        data.endAt,
-        data.sharePrincipals,
-        data.hargaPerLayanan
-      );
+      // Backend method not yet implemented
+      throw new Error('Feature not yet available');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layananku-internal'] });
@@ -40,65 +75,59 @@ export function useCreateLayananku() {
   });
 }
 
-// Get internal layananku list (for admin/superadmin management)
+// Get internal layananku list (for admin/superadmin management) - stubbed
 export function useGetLayanankuInternal(idLayanan: string | null) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<LayanankuRecord | null>({
     queryKey: ['layananku-internal', idLayanan],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      if (!idLayanan) return null;
-      return actor.getLayanankuInternal(idLayanan);
+      return null;
     },
     enabled: !!actor && !actorFetching && !!idLayanan,
   });
 }
 
-// Get my layananku (client-facing)
+// Get my layananku (client-facing) - stubbed
 export function useGetMyLayananku() {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<LayanankuPublic[]>({
     queryKey: ['my-layananku'],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getMyLayananku();
+      return [];
     },
     enabled: !!actor && !actorFetching,
   });
 }
 
-// Get layananku for a specific client with extended data (includes asistenmuName)
+// Get layananku for a specific client with extended data - stubbed
 export function useGetLayanankuForClient(clientId: string | null) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<ExtendedLayanankuRecord[]>({
     queryKey: ['layananku-for-client', clientId],
     queryFn: async () => {
-      if (!actor) return [];
-      if (!clientId) return [];
-      return actor.getLayanankuForClient(clientId);
+      return [];
     },
     enabled: !!actor && !actorFetching && !!clientId,
   });
 }
 
-// Check if caller has active layananku
+// Check if caller has active layananku - stubbed
 export function useMyHasActiveLayananku() {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<boolean>({
     queryKey: ['my-has-active-layananku'],
     queryFn: async () => {
-      if (!actor) return false;
-      return actor.myHasActiveLayananku();
+      return false;
     },
     enabled: !!actor && !actorFetching,
   });
 }
 
-// Update layananku share list
+// Update layananku share list - stubbed
 export function useUpdateLayanankuShare() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -106,7 +135,7 @@ export function useUpdateLayanankuShare() {
   return useMutation({
     mutationFn: async (data: { idLayanan: string; newSharePrincipals: string[] }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateLayanankuShare(data.idLayanan, data.newSharePrincipals);
+      throw new Error('Feature not yet available');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layananku-internal'] });
@@ -121,7 +150,7 @@ export function useUpdateLayanankuShare() {
   });
 }
 
-// Deactivate layananku
+// Deactivate layananku - stubbed
 export function useDeactivateLayananku() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -129,7 +158,7 @@ export function useDeactivateLayananku() {
   return useMutation({
     mutationFn: async (idLayanan: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deactivateLayananku(idLayanan);
+      throw new Error('Feature not yet available');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layananku-internal'] });
