@@ -28,8 +28,6 @@ export default function InternalPendingRegistrationCard({
   rejectingUserId,
   viewerRole,
 }: InternalPendingRegistrationCardProps) {
-  const pendingUsers = users.filter((user) => user.status === 'pending');
-
   const canApproveReject = (userRole: string): boolean => {
     const normalizedViewerRole = (viewerRole || '').trim().toUpperCase();
     const normalizedUserRole = userRole.trim().toUpperCase();
@@ -102,7 +100,7 @@ export default function InternalPendingRegistrationCard({
         <CardDescription>Internal registrations awaiting approval</CardDescription>
       </CardHeader>
       <CardContent>
-        {pendingUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">No pending internal registrations.</div>
         ) : (
           <div className="border rounded-md">
@@ -117,7 +115,7 @@ export default function InternalPendingRegistrationCard({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingUsers.map((user) => {
+                {users.map((user) => {
                   const isApproving = approvingUserId === user.id;
                   const isRejecting = rejectingUserId === user.id;
                   const isProcessing = isApproving || isRejecting;

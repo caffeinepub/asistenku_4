@@ -1,103 +1,60 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T07:10:16.787Z",
+  "generatedAt": "2026-02-09T12:13:52.780Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 10,
-    "implemented": 4,
+    "total": 5,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update backend internal self-registration so any authenticated (non-anonymous) caller can register an internal profile via registerInternalUser(role, name, email, whatsapp), with a hard-guard that a Principal can only ever have one UserProfile (if userProfilesByPrincipal already contains the caller, trap with exactly \"User already has a profile\").",
+        "summary": "Backend: Refactor internal approval querying to use the existing `internalRoles` Set already defined in `backend/main.mo` at line 458 as the only source of truth for determining which roles are “internal” for approval purposes; do not create any new role set/variable for this purpose.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-10",
-        "summary": "Update frontend /internal/login to hide the \"Claim Superadmin\" card when the backend indicates superadmin has already been claimed, using the new backend query isSuperadminClaimed() (do not call claimSuperadmin to check claimed state). Keep other internal login cards and routing behavior unchanged.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/InternalLoginPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/InternalLoginPage.tsx"
-        ]
-      },
-      {
         "id": "REQ-2",
-        "summary": "Implement role-based internal userId generation in backend with per-role counters and exact prefix mapping and 6-digit zero padding, via a function generateInternalUserIdByRole(role: Text): Text that normalizes role, selects prefix, increments the corresponding counter, and returns \"<PREFIX>-000001\" format. Mapping: ADMIN=>AA, ASISTENMU=>AM, SUPERVISOR=>SA, MANAGEMENT=>MA, FINANCE=>FA, CUSTOMER_SERVICE=>CS. SUPERADMIN must not be generated via registerInternalUser (remains claimSuperadmin).",
+        "summary": "Backend: Implement a unified pending-approval query for internal users that returns ONLY users whose `role` is contained in the existing `internalRoles` Set and whose `status` is `pending`, with no role-specific branching (e.g., no separate handling for CUSTOMER_SERVICE or FINANCE).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Enforce collision as a hard error: before persisting a newly generated internal userId to userProfilesById, if userProfilesById.get(userId) is not null then backend MUST trap (no auto-regenerate) to indicate invalid/buggy state.",
+        "summary": "Backend: Ensure the internal-user approval action is role-agnostic for any role contained in `internalRoles` and, when an internal user is approved, their `UserProfile.status` is updated to `active` immediately (no special-casing for specific internal roles).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-4",
-        "summary": "Persist internal profiles on registration with these exact properties: profile.id=userId (generated), profile.principalId=caller.toText(), profile.role=normalized role, profile.status=#pending, profile.internalData={name,email,whatsapp}, and clientData/partnerData are null. Save to both userProfilesById.add(userId, profile) and userProfilesByPrincipal.add(caller, profile). Return userId.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Frontend (Superadmin dashboard): Remove the separate “Customer Service Users” list and merge CUSTOMER_SERVICE users into the main internal user management flow so that pending approvals for CUSTOMER_SERVICE appear in the same “Internal Approval (Pending)” table and the same internal users list as other internal roles.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/superadmin/UserManagementView.tsx",
+          "frontend/src/hooks/useSuperadminUserManagement.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/superadmin/UserManagementView.tsx",
+          "frontend/src/hooks/useSuperadminUserManagement.ts"
+        ]
       },
       {
         "id": "REQ-5",
-        "summary": "Rework backend internal approval authorization to be role-based using the caller’s role from userProfilesByPrincipal (do not use AccessControl #admin for approvals): SUPERADMIN can list approvals and set approval for any internal user (including ADMIN); ADMIN can list approvals and set approval for any internal user EXCEPT targets with role ADMIN or SUPERADMIN; all other roles are unauthorized. Implement helper(s) to read caller role (e.g., callerRoleText) and apply the rules in setApproval and listApprovals.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Add a backend query endpoint for frontend visibility: public query func isSuperadminClaimed() : async Bool { superadminClaimed }.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Update frontend /internal/daftar (InternalRegisterPage) to present a single form with: Role dropdown (internal roles only), Name (required), WhatsApp (required), Email (required), User ID read-only placeholder showing exactly \"(will be generated)\", and Principal ID read-only with copy. On successful submit, show a success UI state that includes the message \"Pending — waiting for admin approval\" and does not redirect automatically.",
+        "summary": "Frontend (Status refresh): Add lightweight automatic refresh for the current user profile query so that when an internal user’s backend status changes (e.g., `pending` → `active` after approval), the UI updates without requiring a manual refresh (polling is acceptable).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/internal/MyProfileCard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Update frontend /internal/daftar behavior for the \"My Workspace\" button after registration: when clicked, it must fetch the caller profile (getCallerUserProfile via existing query hook), and if status is pending it must show a clear pending message and must not navigate to any dashboard route.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx",
-          "frontend/src/lib/internalRoles.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx",
-          "frontend/src/lib/internalRoles.ts"
-        ]
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Update frontend /internal/daftar error handling to map backend trap messages to English UI strings: if error contains \"User already has a profile\" show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role show exactly \"Role is not available.\"; otherwise show exactly \"Registration failed. Please try again.\".",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/InternalRegisterPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/internal/MyProfileCard.tsx"
         ]
       }
     ]
@@ -110,12 +67,15 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/customer-service/CustomerServiceSummaryView.tsx",
+    "frontend/src/components/customer-service/CustomerServiceUserManagementView.tsx",
+    "frontend/src/components/internal/MyProfileCard.tsx",
+    "frontend/src/components/superadmin/InternalPendingRegistrationCard.tsx",
+    "frontend/src/components/superadmin/UserManagementView.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/lib/internalRoles.ts",
-    "frontend/src/pages/InternalLoginPage.tsx",
-    "frontend/src/pages/InternalRegisterPage.tsx",
+    "frontend/src/hooks/useSuperadminUserManagement.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,18 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { InternalAccessCode, InternalCodeType, InternalLoginType } from '../backend';
-
-// Hook for anonymous verification (used by InternalGatePage)
-export function useVerifyInternalAccessCode() {
-  const { actor } = useActor();
-
-  return useMutation<InternalLoginType | null, Error, string>({
-    mutationFn: async (code: string) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.verifyAccessCode(code);
-    },
-  });
-}
+import type { InternalAccessCode, InternalCodeType } from '../backend';
 
 // Hook for SUPERADMIN to fetch all internal access codes
 export function useGetAccessCodes() {

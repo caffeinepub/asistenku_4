@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useGetPartnersByStatus, useGetInternalUsers, useGetCustomerServiceUsers } from '@/hooks/useSuperadminUserManagement';
+import { useGetPartnersByStatus, useGetInternalUsers } from '@/hooks/useSuperadminUserManagement';
 import { useGetAllInternalTasks } from '@/hooks/useSuperadminTasks';
 import { useGetAllServices } from '@/hooks/useQueries';
-import { Users, Briefcase, CheckCircle, Clock } from 'lucide-react';
+import { Users, Briefcase, CheckCircle } from 'lucide-react';
 
 export default function CustomerServiceSummaryView() {
     const pendingPartners = useGetPartnersByStatus('pending');
@@ -10,13 +10,12 @@ export default function CustomerServiceSummaryView() {
     const suspendedPartners = useGetPartnersByStatus('suspended');
     const blacklistedPartners = useGetPartnersByStatus('blacklisted');
     const internalUsers = useGetInternalUsers();
-    const csUsers = useGetCustomerServiceUsers();
     const { data: allTasks = [] } = useGetAllInternalTasks();
     const { data: allServices = [] } = useGetAllServices();
 
     const totalPartners = (pendingPartners.data?.length || 0) + (activePartners.data?.length || 0) + 
                           (suspendedPartners.data?.length || 0) + (blacklistedPartners.data?.length || 0);
-    const totalInternalUsers = (internalUsers.data?.length || 0) + (csUsers.data?.length || 0);
+    const totalInternalUsers = internalUsers.data?.length || 0;
     const totalServices = allServices.length;
     const totalTasks = allTasks.length;
 

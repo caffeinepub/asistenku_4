@@ -13,6 +13,13 @@ export function useGetCallerUser() {
     },
     enabled: !!actor && !actorFetching,
     retry: false,
+    refetchInterval: (query) => {
+      // Poll every 5 seconds if user status is pending
+      if (query.state.data?.status === 'pending') {
+        return 5000;
+      }
+      return false;
+    },
   });
 
   return {

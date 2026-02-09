@@ -266,6 +266,7 @@ export const InternalLoginType = IDL.Variant({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'activateService' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'approveInternalUser' : IDL.Func([IDL.Text], [], []),
   'approvePartner' : IDL.Func([IDL.Text], [], []),
   'approvePartnerProposal' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -306,6 +307,7 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getDefaultPartnerProfile' : IDL.Func([], [UserProfile], ['query']),
   'getMyPartnerTasks' : IDL.Func([], [PartnerTaskDTO], ['query']),
+  'getPendingInternalUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
   'getServiceById' : IDL.Func([IDL.Text], [IDL.Opt(Service)], ['query']),
   'getServiceByIdPublic' : IDL.Func(
       [IDL.Text],
@@ -625,6 +627,7 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'activateService' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'approveInternalUser' : IDL.Func([IDL.Text], [], []),
     'approvePartner' : IDL.Func([IDL.Text], [], []),
     'approvePartnerProposal' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -665,6 +668,7 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getDefaultPartnerProfile' : IDL.Func([], [UserProfile], ['query']),
     'getMyPartnerTasks' : IDL.Func([], [PartnerTaskDTO], ['query']),
+    'getPendingInternalUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
     'getServiceById' : IDL.Func([IDL.Text], [IDL.Opt(Service)], ['query']),
     'getServiceByIdPublic' : IDL.Func(
         [IDL.Text],

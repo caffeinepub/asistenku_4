@@ -1,224 +1,109 @@
 {
   "kind": "build_request",
-  "title": "Patch internal-only registration, ID generation, superadmin claim visibility, and approval authorization",
+  "title": "Unify internal user approval flow using existing internalRoles and merge CS approvals into main list",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update backend internal self-registration so any authenticated (non-anonymous) caller can register an internal profile via registerInternalUser(role, name, email, whatsapp), with a hard-guard that a Principal can only ever have one UserProfile (if userProfilesByPrincipal already contains the caller, trap with exactly \"User already has a profile\").",
+      "text": "Backend: Refactor internal approval querying to use the existing `internalRoles` Set already defined in `backend/main.mo` at line 458 as the only source of truth for determining which roles are “internal” for approval purposes; do not create any new role set/variable for this purpose.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Prinsip sistem final: 1 principalId = 1 role (internal). Jika principal sudah punya profile → tidak boleh daftar role lain.",
-          "Backend wajib menerapkan hard-guard: Jika principalId sudah memiliki UserProfile, maka TIDAK BOLEH mendaftarkan role apa pun lagi."
+          "Build patchnya. Pastikan implementasi backend menggunakan variabel internalRoles yang sudah ada di main.mo baris 458 untuk query approval, jangan membuat variabel baru."
         ]
       },
       "acceptanceCriteria": [
-        "Calling registerInternalUser as an anonymous caller traps with an authorization error.",
-        "Calling registerInternalUser when the caller already has any existing profile in userProfilesByPrincipal traps with exactly \"User already has a profile\".",
-        "registerInternalUser no longer requires caller to be SUPERADMIN."
+        "Code compiles with no new internal-role set/variable introduced for approval filtering (the existing `internalRoles` at main.mo line 458 is used).",
+        "Any approval-related filter that checks whether a user is internal uses `internalRoles.contains(normalizeRole(role))` (or equivalent) referencing the existing `internalRoles` binding."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement role-based internal userId generation in backend with per-role counters and exact prefix mapping and 6-digit zero padding, via a function generateInternalUserIdByRole(role: Text): Text that normalizes role, selects prefix, increments the corresponding counter, and returns \"<PREFIX>-000001\" format. Mapping: ADMIN=>AA, ASISTENMU=>AM, SUPERVISOR=>SA, MANAGEMENT=>MA, FINANCE=>FA, CUSTOMER_SERVICE=>CS. SUPERADMIN must not be generated via registerInternalUser (remains claimSuperadmin).",
+      "text": "Backend: Implement a unified pending-approval query for internal users that returns ONLY users whose `role` is contained in the existing `internalRoles` Set and whose `status` is `pending`, with no role-specific branching (e.g., no separate handling for CUSTOMER_SERVICE or FINANCE).",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Implement generator ID per role (prefix per role)",
-          "ADMIN => \"AA-000001\" ... CUSTOMER_SERVICE => \"CS-000001\"",
-          "(SUPERADMIN tidak lewat registerInternalUser; tetap lewat claimSuperadmin)"
+          "Build patchnya. Pastikan implementasi backend menggunakan variabel internalRoles yang sudah ada di main.mo baris 458 untuk query approval, jangan membuat variabel baru."
         ]
       },
       "acceptanceCriteria": [
-        "First registration for role SUPERVISOR returns SA-000001; second returns SA-000002 (for different principals).",
-        "IDs are always 6 digits with leading zeros.",
-        "registerInternalUser rejects roles not in internalRoles with a clear trap (\"Invalid role\" or equivalent), and does not create a profile."
+        "A single backend method exists to fetch pending internal users, and it filters by (role ∈ internalRoles) AND (status == pending).",
+        "The method does not create or depend on any separate per-role pending lists/queries (including CUSTOMER_SERVICE)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Enforce collision as a hard error: before persisting a newly generated internal userId to userProfilesById, if userProfilesById.get(userId) is not null then backend MUST trap (no auto-regenerate) to indicate invalid/buggy state.",
+      "text": "Backend: Ensure the internal-user approval action is role-agnostic for any role contained in `internalRoles` and, when an internal user is approved, their `UserProfile.status` is updated to `active` immediately (no special-casing for specific internal roles).",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Jangan lakukan auto-generate ulang jika terjadi ID collision... Jika terjadi collision, backend HARUS throw error (trap)"
+          "Build patchnya. Pastikan implementasi backend menggunakan variabel internalRoles yang sudah ada di main.mo baris 458 untuk query approval, jangan membuat variabel baru."
         ]
       },
       "acceptanceCriteria": [
-        "If a generated userId already exists in userProfilesById, registerInternalUser traps and does not modify userProfilesById or userProfilesByPrincipal.",
-        "There is no loop or fallback logic that regenerates IDs on collision."
+        "Approving a pending internal user with role in `internalRoles` results in their profile status being persisted as `active` immediately.",
+        "There is no approval code path that behaves differently for CUSTOMER_SERVICE vs other internal roles."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Persist internal profiles on registration with these exact properties: profile.id=userId (generated), profile.principalId=caller.toText(), profile.role=normalized role, profile.status=#pending, profile.internalData={name,email,whatsapp}, and clientData/partnerData are null. Save to both userProfilesById.add(userId, profile) and userProfilesByPrincipal.add(caller, profile). Return userId.",
-      "target": "backend",
+      "text": "Frontend (Superadmin dashboard): Remove the separate “Customer Service Users” list and merge CUSTOMER_SERVICE users into the main internal user management flow so that pending approvals for CUSTOMER_SERVICE appear in the same “Internal Approval (Pending)” table and the same internal users list as other internal roles.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "status = #pending",
-          "internalData = { name, email, whatsapp }",
-          "Simpan ke: userProfilesById.add(userId, profile) userProfilesByPrincipal.add(caller, profile) Return userId."
+          "Build patchnya. Pastikan implementasi backend menggunakan variabel internalRoles yang sudah ada di main.mo baris 458 untuk query approval, jangan membuat variabel baru."
         ]
       },
       "acceptanceCriteria": [
-        "After a successful internal registration, getCallerUserProfile immediately returns the created profile with status pending and matching role/principalId.",
-        "The returned Text from registerInternalUser equals the persisted profile.id."
+        "`frontend/src/components/superadmin/UserManagementView.tsx` no longer renders a separate “Customer Service Users” section/card.",
+        "Pending CUSTOMER_SERVICE users appear in the same “Internal Approval (Pending)” table as other internal roles.",
+        "Approving/rejecting a CUSTOMER_SERVICE user uses the same approve/reject action wiring as other internal roles (no separate CS flow)."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Rework backend internal approval authorization to be role-based using the caller’s role from userProfilesByPrincipal (do not use AccessControl #admin for approvals): SUPERADMIN can list approvals and set approval for any internal user (including ADMIN); ADMIN can list approvals and set approval for any internal user EXCEPT targets with role ADMIN or SUPERADMIN; all other roles are unauthorized. Implement helper(s) to read caller role (e.g., callerRoleText) and apply the rules in setApproval and listApprovals.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Approval internal JANGAN menggunakan AccessControl #admin.",
-          "Approval HARUS berbasis role dari userProfilesByPrincipal: - SUPERADMIN: boleh approve semua role. - ADMIN: hanya boleh approve selain ADMIN dan SUPERADMIN."
-        ]
-      },
-      "acceptanceCriteria": [
-        "A SUPERADMIN caller can call listApprovals successfully and can approve/reject any pending internal user (including ADMIN).",
-        "An ADMIN caller can call listApprovals successfully and can approve/reject ASISTENMU/SUPERVISOR/MANAGEMENT/FINANCE/CUSTOMER_SERVICE, but traps with an unauthorized error when targeting ADMIN or SUPERADMIN.",
-        "Any non-(SUPERADMIN/ADMIN) caller traps when calling listApprovals or setApproval.",
-        "If the target principal in setApproval has no profile in userProfilesByPrincipal, the call traps with exactly \"User not found\" (as specified)."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Add a backend query endpoint for frontend visibility: public query func isSuperadminClaimed() : async Bool { superadminClaimed }.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Buat endpoint backend sederhana: public query func isSuperadminClaimed() : async Bool { superadminClaimed }"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Calling isSuperadminClaimed returns false before any successful claimSuperadmin call, and true after claimSuperadmin has been successfully executed once.",
-        "The endpoint is a query method and does not mutate state."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Update frontend /internal/daftar (InternalRegisterPage) to present a single form with: Role dropdown (internal roles only), Name (required), WhatsApp (required), Email (required), User ID read-only placeholder showing exactly \"(will be generated)\", and Principal ID read-only with copy. On successful submit, show a success UI state that includes the message \"Pending — waiting for admin approval\" and does not redirect automatically.",
+      "text": "Frontend (Status refresh): Add lightweight automatic refresh for the current user profile query so that when an internal user’s backend status changes (e.g., `pending` → `active` after approval), the UI updates without requiring a manual refresh (polling is acceptable).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Ubah jadi 1 form (dropdown role + input nama + WA + email) + tampilkan principalId read-only + userId (will be generated).",
-          "Submit menampilkan sukses: “berhasil, status pending menunggu approval”."
+          "Build patchnya. Pastikan implementasi backend menggunakan variabel internalRoles yang sudah ada di main.mo baris 458 untuk query approval, jangan membuat variabel baru."
         ]
       },
       "acceptanceCriteria": [
-        "Before submit, User ID displays \"(will be generated)\" and cannot be edited.",
-        "Principal ID is read-only and copyable.",
-        "On successful registration, the page shows a success state (no redirect) and includes the English message \"Pending — waiting for admin approval\".",
-        "The registration mutation calls registerInternalUser({ role, name, email, whatsapp }) exactly once per submit."
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Update frontend /internal/daftar behavior for the \"My Workspace\" button after registration: when clicked, it must fetch the caller profile (getCallerUserProfile via existing query hook), and if status is pending it must show a clear pending message and must not navigate to any dashboard route.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "tombol “My Workspace” tetap ada, tapi ketika ditekan akan check status; kalau pending tampilkan pesan pending (jangan redirect liar)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the caller’s status is pending, clicking My Workspace keeps the user on /internal/daftar and shows an English pending message (no navigation).",
-        "If the caller’s status is active and role matches, existing navigation behavior is preserved (no new routes added)."
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "text": "Update frontend /internal/daftar error handling to map backend trap messages to English UI strings: if error contains \"User already has a profile\" show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role show exactly \"Role is not available.\"; otherwise show exactly \"Registration failed. Please try again.\".",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Jika error “User already has a profile” → tampilkan “Akun ini sudah terdaftar. Silakan login.”",
-          "Jika error invalid role → tampilkan “Role tidak tersedia.”",
-          "Default: “Registration failed. Please try again.”"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When backend traps with \"User already has a profile\", the UI shows exactly \"This account is already registered. Please log in.\".",
-        "When backend traps due to invalid internal role, the UI shows exactly \"Role is not available.\".",
-        "Any other error shows exactly \"Registration failed. Please try again.\"."
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Update frontend /internal/login to hide the \"Claim Superadmin\" card when the backend indicates superadmin has already been claimed, using the new backend query isSuperadminClaimed() (do not call claimSuperadmin to check claimed state). Keep other internal login cards and routing behavior unchanged.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Jika superadmin sudah pernah claim (superadminClaimed true) → kartu “Claim Superadmin” JANGAN muncul lagi.",
-          "Tambahkan query ke backend untuk membaca status: ... isSuperadminClaimed()",
-          "Di UI /internal/login: Jika isSuperadminClaimed() == true → kartu “Claim Superadmin” tidak dirender."
-        ]
-      },
-      "acceptanceCriteria": [
-        "When isSuperadminClaimed() returns true, the Claim Superadmin card is not rendered at all on /internal/login.",
-        "When isSuperadminClaimed() returns false, the Claim Superadmin card renders as it does currently.",
-        "Frontend no longer calls actor.claimSuperadmin() inside the \"check claimed\" query logic (remove the side-effect-based check)."
+        "The React Query for the caller profile (`useGetCallerUser` in `frontend/src/hooks/useQueries.ts`) automatically refetches on an interval (e.g., 5–10 seconds) when appropriate.",
+        "After a superadmin approves an internal user, that user’s profile/status UI updates from pending to active automatically without a full page reload."
       ]
     }
   ],
   "constraints": [
-    "Scope strictly limited to internal flow only: /internal/daftar, /internal/login, internal approval UI (existing superadmin user management section), and the related backend methods; do not add any new routes outside internal.",
-    "Do not introduce new unrelated data models/types; patch only what is required for the specified internal registration, superadmin claim visibility, and approval authorization changes.",
-    "Enforce invariant: 1 Principal (principalId) may have at most 1 UserProfile; if already exists, registration must trap with \"User already has a profile\".",
-    "Internal userId collision must trap (no auto-regeneration).",
-    "Approval authorization must not rely on AccessControl #admin; it must be based on role stored in userProfilesByPrincipal.",
-    "Do not edit frontend files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT; compose existing UI components instead."
+    "Use English for any user-facing text.",
+    "Backend must use the existing `internalRoles` variable already defined in `backend/main.mo` at line 458 for approval queries/filters; do not introduce a new internal-role set/variable.",
+    "Respect the single-actor backend architecture (all Motoko logic stays in `backend/main.mo`).",
+    "Do not edit files under `frontend/src/components/ui` or other immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Do not create or redesign dashboards, workspace routes, or any non-internal login/registration pages.",
-    "Do not add third-party authentication providers; Internet Identity remains the only auth mechanism.",
-    "Do not change claimSuperadmin logic other than adding the isSuperadminClaimed query endpoint and consuming it in the frontend.",
-    "Do not add new role types beyond the existing internalRoles list."
+    "Do not change the internal registration form behavior/fields.",
+    "Do not change role definitions or add/remove roles.",
+    "Do not change the access code system.",
+    "Do not implement real-time via WebSockets or any push-based mechanism."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

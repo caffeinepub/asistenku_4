@@ -241,6 +241,7 @@ export type UserStatus = { 'active' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'activateService' : ActorMethod<[string], boolean>,
+  'approveInternalUser' : ActorMethod<[string], undefined>,
   'approvePartner' : ActorMethod<[string], undefined>,
   'approvePartnerProposal' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
@@ -265,6 +266,7 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDefaultPartnerProfile' : ActorMethod<[], UserProfile>,
   'getMyPartnerTasks' : ActorMethod<[], PartnerTaskDTO>,
+  'getPendingInternalUsers' : ActorMethod<[], Array<UserProfile>>,
   'getServiceById' : ActorMethod<[string], [] | [Service]>,
   'getServiceByIdPublic' : ActorMethod<[string], [] | [ServicePublic]>,
   'getTaskById' : ActorMethod<[string], [] | [TaskRecord]>,

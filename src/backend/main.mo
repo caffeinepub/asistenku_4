@@ -10,7 +10,6 @@ import Time "mo:core/Time";
 import Int "mo:core/Int";
 import Char "mo:core/Char";
 import Iter "mo:core/Iter";
-
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
@@ -1643,6 +1642,56 @@ actor {
     userProfilesById.values().toArray().filter(func(p) { p.status == #active and p.clientData != null });
   };
 
+  public query ({ caller }) func getPendingInternalUsers() : async [UserProfile.UserProfile] {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view pending internal users");
+    };
+    switch (getCallerRoleText(caller)) {
+      case (?role) {
+        if (not (isAdminOrHigher(role))) {
+          Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can view pending internal users");
+        };
+      };
+      case (null) { Runtime.trap("Unauthorized: Only logged in users can access this function") };
+    };
+
+    userProfilesById.values().toArray().filter(func(u) { isValidInternalRole(u.role) and u.status == #pending });
+  };
+
+  public shared ({ caller }) func approveInternalUser(userId : Text) : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot approve internal users");
+    };
+
+    switch (getCallerRoleText(caller)) {
+      case (?role) {
+        if (not (isAdminOrHigher(role))) {
+          Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can approve internal users");
+        };
+      };
+      case (null) {
+        Runtime.trap("Unauthorized: Only logged in users can access this function");
+      };
+    };
+
+    switch (userProfilesById.get(userId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?profile) {
+        if (not isValidInternalRole(profile.role)) {
+          Runtime.trap("User is not an internal staff member");
+        };
+        if (profile.status != #pending) {
+          Runtime.trap("User must be in pending status to approve");
+        };
+        let updatedProfile = {
+          profile with status = #active
+        };
+        userProfilesById.add(userId, updatedProfile);
+        updateUserProfilesByPrincipal(userId, updatedProfile);
+      };
+    };
+  };
+
   public query ({ caller }) func isCallerApproved() : async Bool {
     AccessControl.hasPermission(accessControlState, caller, #admin) or UserApproval.isApproved(approvalState, caller);
   };
@@ -1663,18 +1712,13 @@ actor {
       };
       case (?callerRole) {
         let normalizedCallerRole = normalizeRole(callerRole);
-        
         if (normalizedCallerRole != "SUPERADMIN" and normalizedCallerRole != "ADMIN") {
           Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can set approvals");
         };
-        
         let targetProfileOpt = userProfilesByPrincipal.get(user);
         switch (targetProfileOpt) {
-          case (null) {
-            Runtime.trap("Target user not found");
-          };
+          case (null) { Runtime.trap("Target user not found") };
           case (?targetProfile) {
-            let normalizedTargetRole = normalizeRole(targetProfile.role);
             if (not canApproveInternalUsers(callerRole, targetProfile.role)) {
               Runtime.trap("Unauthorized: ADMIN cannot approve ADMIN or SUPERADMIN users");
             };
@@ -1689,7 +1733,6 @@ actor {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot list approvals");
     };
-
     let callerRoleOpt = getCallerRoleText(caller);
     switch (callerRoleOpt) {
       case (null) {

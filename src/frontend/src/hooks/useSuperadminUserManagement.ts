@@ -69,6 +69,27 @@ export function useGetPartnersByStatus(status: 'pending' | 'active' | 'suspended
   });
 }
 
+export function useGetPendingInternalUsers() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<UserProfile[]>({
+    queryKey: ['users', 'internal', 'pending'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+
+      try {
+        const pendingUsers = await actor.getPendingInternalUsers();
+        return pendingUsers;
+      } catch (error) {
+        console.error('Failed to fetch pending internal users:', error);
+        throw new Error('Failed to load pending internal users');
+      }
+    },
+    enabled: !!actor && !actorFetching,
+    retry: 1,
+  });
+}
+
 export function useGetInternalUsers() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -83,28 +104,6 @@ export function useGetInternalUsers() {
       } catch (error) {
         console.error('Failed to fetch internal users:', error);
         throw new Error('Failed to load internal users');
-      }
-    },
-    enabled: !!actor && !actorFetching,
-    retry: 1,
-  });
-}
-
-export function useGetCustomerServiceUsers() {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<InternalUserDTO[]>({
-    queryKey: ['users', 'role', 'CUSTOMER_SERVICE'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-
-      try {
-        const allInternalUsers = await actor.getAllInternalUsers();
-        const csUsers = allInternalUsers.filter((user) => user.role === 'CUSTOMER_SERVICE');
-        return csUsers;
-      } catch (error) {
-        console.error('Failed to fetch customer service users:', error);
-        throw new Error('Failed to load customer service users');
       }
     },
     enabled: !!actor && !actorFetching,
@@ -272,14 +271,12 @@ export function useApproveInternalUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       if (!actor) throw new Error('Actor not available');
-      const userProfile = await actor.getUserProfile(userId);
-      if (!userProfile) throw new Error('User not found');
-      const principal = Principal.fromText(userProfile.principalId);
-      await actor.setApproval(principal, ApprovalStatus.approved);
+      await actor.approveInternalUser(userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
-      queryClient.invalidateQueries({ queryKey: ['users', 'role', 'CUSTOMER_SERVICE'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'internal', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }
@@ -298,7 +295,8 @@ export function useRejectInternalUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
-      queryClient.invalidateQueries({ queryKey: ['users', 'role', 'CUSTOMER_SERVICE'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'internal', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }

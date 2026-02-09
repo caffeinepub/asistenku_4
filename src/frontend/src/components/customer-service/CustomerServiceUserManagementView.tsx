@@ -6,8 +6,7 @@ import CustomerServiceUserDetailPanel from './CustomerServiceUserDetailPanel';
 import { 
   useSearchUsers, 
   useGetPartnersByStatus,
-  useGetInternalUsers,
-  useGetCustomerServiceUsers
+  useGetInternalUsers
 } from '@/hooks/useSuperadminUserManagement';
 import type { UserProfile } from '@/backend';
 
@@ -22,7 +21,6 @@ export default function CustomerServiceUserManagementView() {
   const suspendedPartners = useGetPartnersByStatus('suspended');
   const blacklistedPartners = useGetPartnersByStatus('blacklisted');
   const internalUsers = useGetInternalUsers();
-  const customerServiceUsers = useGetCustomerServiceUsers();
 
   const handleSearch = async (query: string, mode: 'userId' | 'principalId' | 'name') => {
     try {
@@ -117,18 +115,10 @@ export default function CustomerServiceUserManagementView() {
 
         <UserRoleUsersCard
           title="Internal Users"
-          description="Admin, Asistenmu, Supervisor, Management, and Finance users"
+          description="Admin, Asistenmu, Supervisor, Management, Finance, and Customer Service users"
           users={internalUsers.data || []}
           isLoading={internalUsers.isLoading}
           error={internalUsers.error}
-        />
-
-        <UserRoleUsersCard
-          title="Customer Service Users"
-          description="Customer service team members"
-          users={customerServiceUsers.data || []}
-          isLoading={customerServiceUsers.isLoading}
-          error={customerServiceUsers.error}
         />
       </div>
 

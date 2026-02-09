@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-frontend-internal-daftar-internalregisterpage-to-present-a-single-form-with-role-dropdown-internal-roles-only-name-required-whatsapp-required-email-required-user-id-read-only-placeholder-showing-exactly-will-be-generated-and-principal-id-read-only-with-copy-on-successful-submit-show-a-success-ui-state-that-includes-the-message-pending-waiting-for-admin-approval-and-does-not-redirect-automatically",
-      "featureTitle": "Update frontend /internal/daftar (InternalRegisterPage) to present a single form with: Role dropdown (internal roles only), Name (required), WhatsApp (required), Email (required), User ID read-only placeholder showing exactly \"(will be generated)\", and Principal ID read-only with copy. On successful submit, show a success UI state that includes the message \"Pending — waiting for admin approval\" and does not redirect automatically.",
+      "featureId": "feature-frontend-superadmin-dashboard-remove-the-separate-customer-service-users-list-and-merge-customer-service-users-into-the-main-internal-user-management-flow-so-that-pending-approvals-for-customer-service-appear-in-the-same-internal-approval-pending-table-and-the-same-internal-users-list-as-other-internal-roles",
+      "featureTitle": "Frontend (Superadmin dashboard): Remove the separate “Customer Service Users” list and merge CUSTOMER_SERVICE users into the main internal user management flow so that pending approvals for CUSTOMER_SERVICE appear in the same “Internal Approval (Pending)” table and the same internal users list as other internal roles.",
       "files": [
-        "frontend/src/pages/InternalRegisterPage.tsx"
+        "frontend/src/components/superadmin/UserManagementView.tsx",
+        "frontend/src/hooks/useSuperadminUserManagement.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,16 +18,16 @@
         "user-approval@3.0.0"
       ],
       "testIds": [
-        "REQ-7"
+        "REQ-4"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-frontend-internal-daftar-behavior-for-the-my-workspace-button-after-registration-when-clicked-it-must-fetch-the-caller-profile-getcalleruserprofile-via-existing-query-hook-and-if-status-is-pending-it-must-show-a-clear-pending-message-and-must-not-navigate-to-any-dashboard-route",
-      "featureTitle": "Update frontend /internal/daftar behavior for the \"My Workspace\" button after registration: when clicked, it must fetch the caller profile (getCallerUserProfile via existing query hook), and if status is pending it must show a clear pending message and must not navigate to any dashboard route.",
+      "featureId": "feature-frontend-status-refresh-add-lightweight-automatic-refresh-for-the-current-user-profile-query-so-that-when-an-internal-user-s-backend-status-changes-e-g-pending-active-after-approval-the-ui-updates-without-requiring-a-manual-refresh-polling-is-acceptable",
+      "featureTitle": "Frontend (Status refresh): Add lightweight automatic refresh for the current user profile query so that when an internal user’s backend status changes (e.g., `pending` → `active` after approval), the UI updates without requiring a manual refresh (polling is acceptable).",
       "files": [
-        "frontend/src/lib/internalRoles.ts",
-        "frontend/src/pages/InternalRegisterPage.tsx"
+        "frontend/src/components/internal/MyProfileCard.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -38,48 +39,7 @@
         "user-approval@3.0.0"
       ],
       "testIds": [
-        "REQ-8"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-internal-daftar-error-handling-to-map-backend-trap-messages-to-english-ui-strings-if-error-contains-user-already-has-a-profile-show-exactly-this-account-is-already-registered-please-log-in-if-error-indicates-invalid-role-show-exactly-role-is-not-available-otherwise-show-exactly-registration-failed-please-try-again",
-      "featureTitle": "Update frontend /internal/daftar error handling to map backend trap messages to English UI strings: if error contains \"User already has a profile\" show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role show exactly \"Role is not available.\"; otherwise show exactly \"Registration failed. Please try again.\".",
-      "files": [
-        "frontend/src/pages/InternalRegisterPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "user-approval@3.0.0"
-      ],
-      "testIds": [
-        "REQ-9"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-internal-login-to-hide-the-claim-superadmin-card-when-the-backend-indicates-superadmin-has-already-been-claimed-using-the-new-backend-query-issuperadminclaimed-do-not-call-claimsuperadmin-to-check-claimed-state-keep-other-internal-login-cards-and-routing-behavior-unchanged",
-      "featureTitle": "Update frontend /internal/login to hide the \"Claim Superadmin\" card when the backend indicates superadmin has already been claimed, using the new backend query isSuperadminClaimed() (do not call claimSuperadmin to check claimed state). Keep other internal login cards and routing behavior unchanged.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/InternalLoginPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "user-approval@3.0.0"
-      ],
-      "testIds": [
-        "REQ-10"
+        "REQ-5"
       ],
       "confidence": "high"
     }

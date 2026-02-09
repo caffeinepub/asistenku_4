@@ -263,6 +263,7 @@ export enum UserStatus {
 }
 export interface backendInterface {
     activateService(serviceId: string): Promise<boolean>;
+    approveInternalUser(userId: string): Promise<void>;
     approvePartner(partnerId: string): Promise<void>;
     approvePartnerProposal(_proposalId: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
@@ -287,6 +288,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getDefaultPartnerProfile(): Promise<UserProfile>;
     getMyPartnerTasks(): Promise<PartnerTaskDTO>;
+    getPendingInternalUsers(): Promise<Array<UserProfile>>;
     getServiceById(serviceId: string): Promise<Service | null>;
     getServiceByIdPublic(serviceId: string): Promise<ServicePublic | null>;
     getTaskById(taskId: string): Promise<TaskRecord | null>;
