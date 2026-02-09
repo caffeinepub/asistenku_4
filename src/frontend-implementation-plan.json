@@ -1,6 +1,81 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "No frontend changes required (backend-only internal registration overwrite fix)",
-  "requirements": []
+  "title": "Patch internal registration UI, pending workspace behavior, trap-to-UI error mapping, and superadmin claim visibility",
+  "requirements": [
+    {
+      "id": "REQ-7",
+      "summary": "Revise /internal/daftar to a single internal registration form with read-only generated userId placeholder and copyable principalId, and show a non-redirecting pending success state.",
+      "acceptanceCriteria": [
+        "Before submit, User ID displays \"(will be generated)\" and cannot be edited.",
+        "Principal ID is read-only and copyable.",
+        "On successful registration, the page shows a success state (no redirect) and includes the English message \"Pending — waiting for admin approval\".",
+        "The registration mutation calls registerInternalUser({ role, name, email, whatsapp }) exactly once per submit."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/InternalRegisterPage.tsx",
+          "operation": "modify",
+          "description": "Update InternalRegisterPage to: (1) use only internal roles for the Role dropdown (prefer shared roles from frontend/src/lib/internalRoles.ts), (2) render a single form with required Name/WhatsApp/Email + Role dropdown, (3) show User ID as a read-only value that is exactly \"(will be generated)\" before submit, (4) show Principal ID as read-only with copy using the existing CopyRow component, (5) replace the post-submit UI with a success state that includes the exact message \"Pending — waiting for admin approval\" and does not auto-navigate/redirect. Use existing Internet Identity auth flow (authorization component patterns) to derive principalId and guard submission. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Change /internal/daftar \"My Workspace\" behavior after registration to fetch caller profile and block navigation while pending.",
+      "acceptanceCriteria": [
+        "If the caller’s status is pending, clicking My Workspace keeps the user on /internal/daftar and shows an English pending message (no navigation).",
+        "If the caller’s status is active and role matches, existing navigation behavior is preserved (no new routes added)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/InternalRegisterPage.tsx",
+          "operation": "modify",
+          "description": "In the post-registration success state on /internal/daftar, add/retain a \"My Workspace\" button that uses the existing getCallerUserProfile query hook (useGetCallerUser) to fetch the caller profile on click. If status is pending, show a clear English pending message in-page and do not navigate. If status is active and role matches, navigate using the existing role->route mapping (frontend/src/lib/internalRoles.ts) without adding new routes. Use existing auth patterns from the authorization component (Internet Identity + actor readiness) and keep behavior scoped to internal flow only. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/internalRoles.ts",
+          "operation": "modify",
+          "description": "(If needed) ensure the internal role metadata already exported here can be reused by /internal/daftar for: internal registration dropdown options and role->workspace route mapping, without adding new roles or new routes. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Map backend trap messages during internal registration to exact English UI error strings on /internal/daftar.",
+      "acceptanceCriteria": [
+        "When backend traps with \"User already has a profile\", the UI shows exactly \"This account is already registered. Please log in.\".",
+        "When backend traps due to invalid internal role, the UI shows exactly \"Role is not available.\".",
+        "Any other error shows exactly \"Registration failed. Please try again.\"."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/InternalRegisterPage.tsx",
+          "operation": "modify",
+          "description": "Replace current error handling for registerInternalUser failures with exact trap-to-UI mapping: if error message contains \"User already has a profile\" -> show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role (e.g., contains \"Invalid role\" or equivalent backend invalid-role trap text) -> show exactly \"Role is not available.\"; otherwise -> show exactly \"Registration failed. Please try again.\". Keep messages exactly as specified and scoped to /internal/daftar. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Hide the \"Claim Superadmin\" card on /internal/login when superadmin is already claimed by using isSuperadminClaimed() query (no side-effect check).",
+      "acceptanceCriteria": [
+        "When isSuperadminClaimed() returns true, the Claim Superadmin card is not rendered at all on /internal/login.",
+        "When isSuperadminClaimed() returns false, the Claim Superadmin card renders as it does currently.",
+        "Frontend no longer calls actor.claimSuperadmin() inside the \"check claimed\" query logic (remove the side-effect-based check)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update useCheckSuperadminClaimed to call actor.isSuperadminClaimed() (query) instead of calling actor.claimSuperadmin() as a probe. Ensure it returns the backend boolean directly, keeps the existing react-query key ['superadminClaimed'], and does not introduce any claim side effects. Use existing authorization component patterns (actor readiness + identity) when deciding query enablement. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/InternalLoginPage.tsx",
+          "operation": "modify",
+          "description": "Confirm /internal/login renders the Claim Superadmin card only when useCheckSuperadminClaimed returns false, and that no UI logic triggers claimSuperadmin except the explicit \"Claim Superadmin\" button click. Keep other internal login cards and routing behavior unchanged, and do not add any new routes. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
 }

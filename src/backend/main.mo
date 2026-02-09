@@ -418,6 +418,10 @@ actor {
   var partnerCounter = 0;
   var customerServiceCounter = 0;
   var internalUserCounter = 0;
+  var assistantCounter = 0;
+  var supervisorCounter = 0;
+  var managementCounter = 0;
+  var financeCounter = 0;
   var superadminClaimed = false;
   var _isInitialized = false;
   var auditLogCounter = 0;
@@ -491,6 +495,28 @@ actor {
   func canManageServices(role : Text) : Bool {
     let normalized = normalizeRole(role);
     normalized == "SUPERADMIN" or normalized == "ADMIN" or normalized == "FINANCE";
+  };
+
+  func canApproveInternalUsers(callerRole : Text, targetRole : Text) : Bool {
+    let normalizedCallerRole = normalizeRole(callerRole);
+    let normalizedTargetRole = normalizeRole(targetRole);
+
+    if (normalizedCallerRole == "SUPERADMIN") {
+      return true;
+    };
+
+    if (normalizedCallerRole == "ADMIN" and (normalizedTargetRole != "SUPERADMIN" and normalizedTargetRole != "ADMIN")) {
+      return true;
+    };
+
+    false;
+  };
+
+  func getCallerRoleText(caller : Principal) : ?Text {
+    switch (userProfilesByPrincipal.get(caller)) {
+      case (null) { null };
+      case (?profile) { ?profile.role };
+    };
   };
 
   public query ({ caller }) func isValidRoleName(roleName : Text) : async Bool {
@@ -688,16 +714,31 @@ actor {
     "TS-" # zeros # paddedNumber;
   };
 
-  private func generateInternalUserId() : Text {
-    internalUserCounter += 1;
-    let paddedNumber = internalUserCounter.toText();
+  private func generateInternalUserIdByRole(role : Text) : Text {
+    let normalizedRole = normalizeRole(role);
+    var prefix = "";
+    var currentCount = 0;
+
+    switch (normalizedRole) {
+      case ("ADMIN") { prefix := "AA"; currentCount := internalUserCounter };
+      case ("ASISTENMU") { prefix := "AM"; currentCount := assistantCounter };
+      case ("SUPERVISOR") { prefix := "SA"; currentCount := supervisorCounter };
+      case ("MANAGEMENT") { prefix := "MA"; currentCount := managementCounter };
+      case ("FINANCE") { prefix := "FA"; currentCount := financeCounter };
+      case ("CUSTOMER_SERVICE") { prefix := "CS"; currentCount := customerServiceCounter };
+      case (_) { prefix := "XX"; currentCount := 0 };
+    };
+
+    currentCount += 1;
+    let paddedNumber = currentCount.toText();
     var zeros = "";
-    var i = 0;
-    while (i < 6 - paddedNumber.size()) {
+    var i = paddedNumber.size();
+    while (i < 6) {
       zeros := zeros # "0";
       i += 1;
     };
-    "INT-" # zeros # paddedNumber;
+
+    prefix # "-" # zeros # paddedNumber;
   };
 
   public shared ({ caller }) func registerClient(name : Text, email : Text, whatsapp : Text, company : Text) : async Text {
@@ -785,19 +826,14 @@ actor {
 
   public shared ({ caller }) func registerInternalUser(role : Text, name : Text, email : Text, whatsapp : Text) : async Text {
     if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot register");
+      Runtime.trap("Anonymous users cannot register");
     };
 
-    let callerProfile = getCallerProfile(caller);
-    switch (callerProfile) {
-      case (?profile) {
-        if (normalizeRole(profile.role) != "SUPERADMIN") {
-          Runtime.trap("Unauthorized: Only SUPERADMIN can register internal users");
-        };
+    switch (userProfilesByPrincipal.get(caller)) {
+      case (?_) {
+        Runtime.trap("User already has a profile");
       };
-      case (null) {
-        Runtime.trap("Unauthorized: Only SUPERADMIN can register internal users");
-      };
+      case (null) {};
     };
 
     let normalizedRole = normalizeRole(role);
@@ -805,40 +841,49 @@ actor {
       Runtime.trap("Invalid internal role. Offered roles are { SUPERADMIN, ADMIN, ASISTENMU, SUPERVISOR, MANAGEMENT, FINANCE, CUSTOMER_SERVICE }");
     };
 
-    var userId = "";
-    var retryCount = 0;
-
-    while (retryCount < 10) {
-      userId := generateInternalUserId();
-      switch (userProfilesById.get(userId)) {
-        case (null) {
-          let internalData : InternalRegistrationData.InternalRegistrationData = {
-            name = name;
-            email = email;
-            whatsapp = whatsapp;
-          };
-
-          let profile : UserProfile.UserProfile = {
-            id = userId;
-            principalId = caller.toText();
-            role = normalizedRole;
-            status = #pending;
-            clientData = null;
-            partnerData = null;
-            internalData = ?internalData;
-          };
-
-          userProfilesById.add(userId, profile);
-          userProfilesByPrincipal.add(caller, profile);
-          return userId;
-        };
-        case (?_) {
-          retryCount += 1;
-        };
-      };
+    if (normalizedRole == "SUPERADMIN") {
+      Runtime.trap("SUPERADMIN must be claimed via claimSuperadmin");
     };
 
-    Runtime.trap("Failed to generate unique internal user ID after multiple attempts");
+    let userId = generateInternalUserIdByRole(normalizedRole);
+
+    switch (userProfilesById.get(userId)) {
+      case (?_) {
+        Runtime.trap("Internal user ID already exists. Backend is in invalid state");
+      };
+      case (null) {};
+    };
+
+    let internalData : InternalRegistrationData.InternalRegistrationData = {
+      name;
+      email;
+      whatsapp;
+    };
+
+    let profile : UserProfile.UserProfile = {
+      id = userId;
+      principalId = caller.toText();
+      role = normalizedRole;
+      status = #pending;
+      clientData = null;
+      partnerData = null;
+      internalData = ?internalData;
+    };
+
+    userProfilesById.add(userId, profile);
+    userProfilesByPrincipal.add(caller, profile);
+
+    switch (normalizedRole) {
+      case ("ADMIN") { internalUserCounter += 1 };
+      case ("ASISTENMU") { assistantCounter += 1 };
+      case ("SUPERVISOR") { supervisorCounter += 1 };
+      case ("MANAGEMENT") { managementCounter += 1 };
+      case ("FINANCE") { financeCounter += 1 };
+      case ("CUSTOMER_SERVICE") { customerServiceCounter += 1 };
+      case (_) {};
+    };
+
+    userId;
   };
 
   public shared ({ caller }) func claimSuperadmin() : async Text {
@@ -879,6 +924,10 @@ actor {
     superadminClaimed := true;
 
     userId;
+  };
+
+  public query ({ caller }) func isSuperadminClaimed() : async Bool {
+    superadminClaimed;
   };
 
   public shared ({ caller }) func createService(service : Service.Service) : async () {
@@ -1603,15 +1652,55 @@ actor {
   };
 
   public shared ({ caller }) func setApproval(user : Principal, status : UserApproval.ApprovalStatus) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot set approvals");
+    };
+
+    let callerRoleOpt = getCallerRoleText(caller);
+    switch (callerRoleOpt) {
+      case (null) {
+        Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can set approvals");
+      };
+      case (?callerRole) {
+        let normalizedCallerRole = normalizeRole(callerRole);
+        
+        if (normalizedCallerRole != "SUPERADMIN" and normalizedCallerRole != "ADMIN") {
+          Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can set approvals");
+        };
+        
+        let targetProfileOpt = userProfilesByPrincipal.get(user);
+        switch (targetProfileOpt) {
+          case (null) {
+            Runtime.trap("Target user not found");
+          };
+          case (?targetProfile) {
+            let normalizedTargetRole = normalizeRole(targetProfile.role);
+            if (not canApproveInternalUsers(callerRole, targetProfile.role)) {
+              Runtime.trap("Unauthorized: ADMIN cannot approve ADMIN or SUPERADMIN users");
+            };
+          };
+        };
+      };
     };
     UserApproval.setApproval(approvalState, user, status);
   };
 
   public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot list approvals");
+    };
+
+    let callerRoleOpt = getCallerRoleText(caller);
+    switch (callerRoleOpt) {
+      case (null) {
+        Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can list approvals");
+      };
+      case (?callerRole) {
+        let normalizedCallerRole = normalizeRole(callerRole);
+        if (normalizedCallerRole != "SUPERADMIN" and normalizedCallerRole != "ADMIN") {
+          Runtime.trap("Unauthorized: Only SUPERADMIN or ADMIN can list approvals");
+        };
+      };
     };
     UserApproval.listApprovals(approvalState);
   };

@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { UserProfile, InternalUserDTO, TaskRecord } from '../backend';
-import { SearchMode, UserStatus, ApprovalStatus } from '../backend';
+import { SearchMode, UserStatus, ApprovalStatus, PartnerLevel } from '../backend';
+import { Principal } from '@icp-sdk/core/principal';
 import { mapUILevelToBackend, mapUIStatusToBackend, getHourlyRateForLevel } from '@/lib/superadminUserMapping';
 
 export function useSearchUsers() {
@@ -10,11 +11,8 @@ export function useSearchUsers() {
   return useMutation({
     mutationFn: async ({ query, mode }: { query: string; mode: 'userId' | 'principalId' | 'name' }) => {
       if (!actor) throw new Error('Actor not available');
-      
-      // Map UI mode to backend SearchMode
-      let searchMode: SearchMode;
+
       if (mode === 'userId') {
-        // For userId, use exact match by calling getUserProfile directly
         try {
           const user = await actor.getUserProfile(query);
           return user ? [user] : [];
@@ -23,33 +21,27 @@ export function useSearchUsers() {
           return [];
         }
       } else if (mode === 'principalId') {
-        searchMode = SearchMode.searchByClientPrincipal;
+        const searchMode = SearchMode.searchByClientPrincipal;
+        try {
+          const results = await actor.searchUsersByMode(query, searchMode);
+          return results.filter((user) => user.principalId === query);
+        } catch (error) {
+          console.error('Search failed:', error);
+          throw new Error('Search failed. Please try again.');
+        }
       } else {
-        // For name search, we'll use searchAll and filter client-side
-        searchMode = SearchMode.searchAll;
-      }
-
-      try {
-        const results = await actor.searchUsersByMode(query, searchMode);
-        
-        // If searching by name, filter results client-side (case-insensitive contains)
-        if (mode === 'name') {
+        const searchMode = SearchMode.searchAll;
+        try {
+          const results = await actor.searchUsersByMode(query, searchMode);
           const lowerQuery = query.toLowerCase();
-          return results.filter(user => {
+          return results.filter((user) => {
             const name = user.clientData?.name || user.partnerData?.name || user.internalData?.name || '';
             return name.toLowerCase().includes(lowerQuery);
           });
+        } catch (error) {
+          console.error('Search failed:', error);
+          throw new Error('Search failed. Please try again.');
         }
-        
-        // For principalId, filter exact match
-        if (mode === 'principalId') {
-          return results.filter(user => user.principalId === query);
-        }
-        
-        return results;
-      } catch (error) {
-        console.error('Search failed:', error);
-        throw new Error('Search failed. Please try again.');
       }
     },
   });
@@ -62,7 +54,7 @@ export function useGetPartnersByStatus(status: 'pending' | 'active' | 'suspended
     queryKey: ['partners', status],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
+
       try {
         const backendStatus = mapUIStatusToBackend(status);
         const partners = await actor.getAllPartnersByStatus(backendStatus);
@@ -84,7 +76,7 @@ export function useGetInternalUsers() {
     queryKey: ['users', 'internal'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
+
       try {
         const internalUsers = await actor.getAllInternalUsers();
         return internalUsers;
@@ -105,11 +97,10 @@ export function useGetCustomerServiceUsers() {
     queryKey: ['users', 'role', 'CUSTOMER_SERVICE'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
+
       try {
         const allInternalUsers = await actor.getAllInternalUsers();
-        // Filter for CUSTOMER_SERVICE role
-        const csUsers = allInternalUsers.filter(user => user.role === 'CUSTOMER_SERVICE');
+        const csUsers = allInternalUsers.filter((user) => user.role === 'CUSTOMER_SERVICE');
         return csUsers;
       } catch (error) {
         console.error('Failed to fetch customer service users:', error);
@@ -128,7 +119,7 @@ export function useGetActiveClients() {
     queryKey: ['clients', 'active'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
+
       try {
         const activeClients = await actor.getActiveClientProfiles();
         return activeClients;
@@ -149,32 +140,22 @@ export function useGetPartnerMetrics(partnerId: string) {
     queryKey: ['partnerMetrics', partnerId],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
+
       try {
-        // Fetch all tasks and partner profile to compute metrics
         const [allTasks, partnerProfile] = await Promise.all([
           actor.getAllTasksInternal(),
           actor.getUserProfile(partnerId),
         ]);
 
-        // Filter tasks assigned to this partner
-        const partnerTasks = allTasks.filter(task => task.assignedPartnerId?.[0] === partnerId);
+        const partnerTasks = allTasks.filter((task) => task.assignedPartnerId?.[0] === partnerId);
 
-        // Count completed and rejected/cancelled tasks
-        const completedJobs = partnerTasks.filter(task => task.statusInternal === 'DONE').length;
-        const rejectedJobs = partnerTasks.filter(task => 
-          task.statusInternal === 'REVISION' // Using REVISION as proxy for rejected
-        ).length;
+        const completedJobs = partnerTasks.filter((task) => task.statusInternal === 'DONE').length;
+        const rejectedJobs = partnerTasks.filter((task) => task.statusInternal === 'REVISION').length;
 
-        // Estimate earnings: completed jobs × hourly rate (simplified baseline)
         const hourlyRate = partnerProfile?.partnerData?.hourlyRate || BigInt(0);
-        const totalEarnings = completedJobs * Number(hourlyRate);
+        const totalEarnings = Number(hourlyRate) * completedJobs;
 
-        return {
-          completedJobs,
-          rejectedJobs,
-          totalEarnings,
-        };
+        return { completedJobs, rejectedJobs, totalEarnings };
       } catch (error) {
         console.error('Failed to fetch partner metrics:', error);
         throw new Error('Failed to load partner metrics');
@@ -193,30 +174,15 @@ export function useApprovePartner() {
     mutationFn: async ({ partnerId, level }: { partnerId: string; level: 'JUNIOR' | 'SENIOR' | 'EXPERT' }) => {
       if (!actor) throw new Error('Actor not available');
       
-      try {
-        // First approve the partner (changes status from pending to active)
-        await actor.approvePartner(partnerId);
-        
-        // Then set the level and hourly rate
-        const backendLevel = mapUILevelToBackend(level);
-        const hourlyRate = getHourlyRateForLevel(level);
-        await actor.updatePartnerLevelAndHourlyRate(partnerId, backendLevel, hourlyRate);
-      } catch (error: any) {
-        console.error('Failed to approve partner:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to approve partners');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        if (error.message?.includes('Invalid status transition')) {
-          throw new Error('Partner is not in pending status');
-        }
-        throw new Error('Failed to approve partner. Please try again.');
-      }
+      // First approve the partner
+      await actor.approvePartner(partnerId);
+      
+      // Then set their level and hourly rate
+      const backendLevel = mapUILevelToBackend(level);
+      const hourlyRate = getHourlyRateForLevel(level);
+      await actor.updatePartnerLevelAndHourlyRate(partnerId, backendLevel, hourlyRate);
     },
     onSuccess: () => {
-      // Invalidate all partner queries to refresh lists
       queryClient.invalidateQueries({ queryKey: ['partners'] });
     },
   });
@@ -229,52 +195,10 @@ export function useRejectPartner() {
   return useMutation({
     mutationFn: async (partnerId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        await actor.rejectPartner(partnerId);
-      } catch (error: any) {
-        console.error('Failed to reject partner:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to reject partners');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        throw new Error('Failed to reject partner. Please try again.');
-      }
+      await actor.rejectPartner(partnerId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partners'] });
-    },
-  });
-}
-
-export function useUpdatePartnerLevel() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ partnerId, level }: { partnerId: string; level: 'JUNIOR' | 'SENIOR' | 'EXPERT' }) => {
-      if (!actor) throw new Error('Actor not available');
-      
-      try {
-        const backendLevel = mapUILevelToBackend(level);
-        const hourlyRate = getHourlyRateForLevel(level);
-        await actor.updatePartnerLevelAndHourlyRate(partnerId, backendLevel, hourlyRate);
-      } catch (error: any) {
-        console.error('Failed to update partner level:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to update partner levels');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        throw new Error('Failed to update partner level. Please try again.');
-      }
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['partners'] });
-      queryClient.invalidateQueries({ queryKey: ['partnerMetrics', variables.partnerId] });
     },
   });
 }
@@ -286,22 +210,7 @@ export function useSuspendPartner() {
   return useMutation({
     mutationFn: async (partnerId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        await actor.suspendPartner(partnerId);
-      } catch (error: any) {
-        console.error('Failed to suspend partner:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to suspend partners');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        if (error.message?.includes('Invalid status transition')) {
-          throw new Error('Partner must be active to suspend');
-        }
-        throw new Error('Failed to suspend partner. Please try again.');
-      }
+      await actor.suspendPartner(partnerId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partners'] });
@@ -316,19 +225,7 @@ export function useBlacklistPartner() {
   return useMutation({
     mutationFn: async (partnerId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        await actor.blacklistPartner(partnerId);
-      } catch (error: any) {
-        console.error('Failed to blacklist partner:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to blacklist partners');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        throw new Error('Failed to blacklist partner. Please try again.');
-      }
+      await actor.blacklistPartner(partnerId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partners'] });
@@ -343,22 +240,24 @@ export function useReactivatePartner() {
   return useMutation({
     mutationFn: async (partnerId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        await actor.reactivatePartner(partnerId);
-      } catch (error: any) {
-        console.error('Failed to reactivate partner:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to reactivate partners');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('Partner not found');
-        }
-        if (error.message?.includes('Invalid status transition')) {
-          throw new Error('Partner must be suspended to reactivate');
-        }
-        throw new Error('Failed to reactivate partner. Please try again.');
-      }
+      await actor.reactivatePartner(partnerId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partners'] });
+    },
+  });
+}
+
+export function useUpdatePartnerLevel() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ partnerId, level }: { partnerId: string; level: 'JUNIOR' | 'SENIOR' | 'EXPERT' }) => {
+      if (!actor) throw new Error('Actor not available');
+      const backendLevel = mapUILevelToBackend(level);
+      const hourlyRate = getHourlyRateForLevel(level);
+      await actor.updatePartnerLevelAndHourlyRate(partnerId, backendLevel, hourlyRate);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partners'] });
@@ -373,33 +272,14 @@ export function useApproveInternalUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        // Get the user profile to extract the principal
-        const userProfile = await actor.getUserProfile(userId);
-        if (!userProfile) {
-          throw new Error('User not found');
-        }
-        
-        // Convert principal string to Principal object
-        const { Principal } = await import('@dfinity/principal');
-        const userPrincipal = Principal.fromText(userProfile.principalId);
-        
-        // Use the approval system to approve the user
-        await actor.setApproval(userPrincipal, ApprovalStatus.approved);
-      } catch (error: any) {
-        console.error('Failed to approve internal user:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to approve internal users');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('User not found');
-        }
-        throw new Error('Failed to approve internal user. Please try again.');
-      }
+      const userProfile = await actor.getUserProfile(userId);
+      if (!userProfile) throw new Error('User not found');
+      const principal = Principal.fromText(userProfile.principalId);
+      await actor.setApproval(principal, ApprovalStatus.approved);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'role', 'CUSTOMER_SERVICE'] });
     },
   });
 }
@@ -411,33 +291,14 @@ export function useRejectInternalUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        // Get the user profile to extract the principal
-        const userProfile = await actor.getUserProfile(userId);
-        if (!userProfile) {
-          throw new Error('User not found');
-        }
-        
-        // Convert principal string to Principal object
-        const { Principal } = await import('@dfinity/principal');
-        const userPrincipal = Principal.fromText(userProfile.principalId);
-        
-        // Use the approval system to reject the user
-        await actor.setApproval(userPrincipal, ApprovalStatus.rejected);
-      } catch (error: any) {
-        console.error('Failed to reject internal user:', error);
-        if (error.message?.includes('Unauthorized')) {
-          throw new Error('You do not have permission to reject internal users');
-        }
-        if (error.message?.includes('not found')) {
-          throw new Error('User not found');
-        }
-        throw new Error('Failed to reject internal user. Please try again.');
-      }
+      const userProfile = await actor.getUserProfile(userId);
+      if (!userProfile) throw new Error('User not found');
+      const principal = Principal.fromText(userProfile.principalId);
+      await actor.setApproval(principal, ApprovalStatus.rejected);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'role', 'CUSTOMER_SERVICE'] });
     },
   });
 }

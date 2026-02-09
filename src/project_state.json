@@ -1,66 +1,128 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Backend includes internal registration/login/approval flows; current work focuses on fixing an internal registration bug where user IDs are generated from caller principal causing overwrites, and ensuring CUSTOMER_SERVICE is treated consistently as an internal role.",
+  "summary": "Patch internal-only flow: fix backend internal self-registration with per-role generated unique IDs and hard guard 1 principalId = 1 internal role; update approval authorization rules based on stored role (SUPERADMIN vs ADMIN restrictions) without AccessControl #admin; update /internal/daftar and /internal/login UI behaviors including hiding Claim Superadmin card when already claimed, plus required backend query endpoint.",
   "architectural_notes": [
-    "Internal userId generation in registerInternalUser must be unique per created user (use an internal counter or equivalent), not derived from caller principal, to prevent overwriting userProfilesById.",
-    "Add minimal safety guard in registerInternalUser to avoid silent overwrite if a generated userId already exists.",
-    "CUSTOMER_SERVICE must be treated the same as other internal roles in register/login/approval flows; avoid special DTO/paths that lose or alter role/status."
+    "Scope limited to INTERNAL flow only: /internal/daftar, /internal/login, internal approval, and related backend patches; no new routes/features outside internal.",
+    "Invariant: 1 principalId = 1 internal role/profile; if caller already has a UserProfile, registration must trap and deny any additional role.",
+    "Internal registration uses existing Access Codes: Code B for /internal/daftar and Code A for /internal/login.",
+    "Internal userId generation: per-role prefix + 6-digit counter; uniqueness is enforced by design; any collision must trap as invalid state (no auto-regenerate).",
+    "Approval authorization must be derived from role stored in userProfilesByPrincipal (not AccessControl #admin): SUPERADMIN approves all; ADMIN approves all except ADMIN and SUPERADMIN."
   ],
   "known_issues": [
-    "Bug: registerInternalUser uses userId = \"INT-\" + caller principal, causing all internal registrations by the same SUPERADMIN to overwrite each other; leads to incorrect role/status (e.g., everyone appears as CUSTOMER_SERVICE pending)."
+    "Bug: /internal/daftar registration currently fails because userId generation is based on caller principal and can overwrite/collide; form cannot submit.",
+    "Bug: Superadmin approval action currently blocked with “only admin can do this” due to improper authorization logic."
   ],
   "isFixRequest": true,
-  "existing_features": [],
+  "existing_features": [
+    {
+      "id": "feature-update-frontend-internal-daftar-internalregisterpage-to-present-a-single-form-with-role-dropdown-internal-roles-only-name-required-whatsapp-required-email-required-user-id-read-only-placeholder-showing-exactly-will-be-generated-and-principal-id-read-only-with-copy-on-successful-submit-show-a-success-ui-state-that-includes-the-message-pending-waiting-for-admin-approval-and-does-not-redirect-automatically",
+      "title": "Update frontend /internal/daftar (InternalRegisterPage) to present a single form with: Role dropdown (internal roles only), Name (required), WhatsApp (required), Email (required), User ID read-only placeholder showing exactly \"(will be generated)\", and Principal ID read-only with copy. On successful submit, show a success UI state that includes the message \"Pending — waiting for admin approval\" and does not redirect automatically.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-internal-daftar-behavior-for-the-my-workspace-button-after-registration-when-clicked-it-must-fetch-the-caller-profile-getcalleruserprofile-via-existing-query-hook-and-if-status-is-pending-it-must-show-a-clear-pending-message-and-must-not-navigate-to-any-dashboard-route",
+      "title": "Update frontend /internal/daftar behavior for the \"My Workspace\" button after registration: when clicked, it must fetch the caller profile (getCallerUserProfile via existing query hook), and if status is pending it must show a clear pending message and must not navigate to any dashboard route.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-internal-daftar-error-handling-to-map-backend-trap-messages-to-english-ui-strings-if-error-contains-user-already-has-a-profile-show-exactly-this-account-is-already-registered-please-log-in-if-error-indicates-invalid-role-show-exactly-role-is-not-available-otherwise-show-exactly-registration-failed-please-try-again",
+      "title": "Update frontend /internal/daftar error handling to map backend trap messages to English UI strings: if error contains \"User already has a profile\" show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role show exactly \"Role is not available.\"; otherwise show exactly \"Registration failed. Please try again.\".",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-internal-login-to-hide-the-claim-superadmin-card-when-the-backend-indicates-superadmin-has-already-been-claimed-using-the-new-backend-query-issuperadminclaimed-do-not-call-claimsuperadmin-to-check-claimed-state-keep-other-internal-login-cards-and-routing-behavior-unchanged",
+      "title": "Update frontend /internal/login to hide the \"Claim Superadmin\" card when the backend indicates superadmin has already been claimed, using the new backend query isSuperadminClaimed() (do not call claimSuperadmin to check claimed state). Keep other internal login cards and routing behavior unchanged.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    }
+  ],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix internal registration bug: generate unique internal user IDs (counter-based, not caller principal), prevent overwrites in userProfilesById/byPrincipal, and ensure CUSTOMER_SERVICE is handled consistently as a normal internal role",
+      "summary": "Backend: Fix registerInternalUser to self-register internal users with per-role generated userId (prefix + 6-digit counter), pending status, and hard-guard preventing any principal with existing profile from registering again; trap on ID collision (no auto-regenerate).",
       "reqIds": [],
       "status": "in_progress"
     },
     {
       "id": "AR-2",
-      "summary": "Update `backend/main.mo` `registerInternalUser(role, name, email, whatsapp)` to generate a unique internal user ID that does not depend on the caller Principal (replace any `\"INT-\" # caller.toText()` strategy). Use an internal counter-based strategy so a single SUPERADMIN can register multiple internal users without overwriting entries in `userProfilesById`.",
+      "summary": "Backend: Rework approval permissions to be role-based (from userProfilesByPrincipal) so SUPERADMIN can approve all, ADMIN can approve all except ADMIN/SUPERADMIN; remove AccessControl #admin dependency for approvals and listApprovals.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Frontend: Update /internal/daftar to single form (role dropdown, name, WA, email) showing principalId read-only and userId as generated; submit shows pending-success message; My Workspace checks status and shows pending message instead of redirecting.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Frontend+Backend: Add backend query isSuperadminClaimed() and update /internal/login to hide “Claim Superadmin” card when superadminClaimed is true; keep other login behavior unchanged.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Update backend internal self-registration so any authenticated (non-anonymous) caller can register an internal profile via registerInternalUser(role, name, email, whatsapp), with a hard-guard that a Principal can only ever have one UserProfile (if userProfilesByPrincipal already contains the caller, trap with exactly \"User already has a profile\").",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-3",
-      "summary": "Ensure the internal ID counter used by `registerInternalUser` remains safe across canister upgrades so it does not reset to a value that could collide with existing `INT-*` IDs already stored in `userProfilesById`. If an upgrade/migration step is necessary under current state persistence, add the minimal conditional migration to preserve or recompute the counter from existing stored profiles.",
+      "id": "AR-6",
+      "summary": "Implement role-based internal userId generation in backend with per-role counters and exact prefix mapping and 6-digit zero padding, via a function generateInternalUserIdByRole(role: Text): Text that normalizes role, selects prefix, increments the corresponding counter, and returns \"<PREFIX>-000001\" format. Mapping: ADMIN=>AA, ASISTENMU=>AM, SUPERVISOR=>SA, MANAGEMENT=>MA, FINANCE=>FA, CUSTOMER_SERVICE=>CS. SUPERADMIN must not be generated via registerInternalUser (remains claimSuperadmin).",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-4",
-      "summary": "Add a minimal safety guard in `registerInternalUser` to prevent silent overwrite in `userProfilesById`: if the newly generated `userId` already exists in `userProfilesById`, the function must not overwrite the existing profile (e.g., retry generating the next counter value until free, or trap with a clear error).",
+      "id": "AR-7",
+      "summary": "Enforce collision as a hard error: before persisting a newly generated internal userId to userProfilesById, if userProfilesById.get(userId) is not null then backend MUST trap (no auto-regenerate) to indicate invalid/buggy state.",
       "reqIds": [
         "REQ-3"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-5",
-      "summary": "Keep `registerInternalUser` authorization exactly as it currently is: it must remain callable only by a caller whose existing profile role is `SUPERADMIN`, and anonymous callers must be rejected.",
+      "id": "AR-8",
+      "summary": "Persist internal profiles on registration with these exact properties: profile.id=userId (generated), profile.principalId=caller.toText(), profile.role=normalized role, profile.status=#pending, profile.internalData={name,email,whatsapp}, and clientData/partnerData are null. Save to both userProfilesById.add(userId, profile) and userProfilesByPrincipal.add(caller, profile). Return userId.",
       "reqIds": [
         "REQ-4"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-6",
-      "summary": "Make `CUSTOMER_SERVICE` handling fully consistent with other internal roles in backend registration and returned/listed data: when `registerInternalUser` is called with role `CUSTOMER_SERVICE`, it must create the same `UserProfile` structure as other internal roles (role preserved as `CUSTOMER_SERVICE`, status `#pending`, stored in both `userProfilesById` and `userProfilesByPrincipal`). Remove/avoid any special-case DTO or list/return path that causes CUSTOMER_SERVICE users to lose role information or be treated differently from other internal roles.",
+      "id": "AR-9",
+      "summary": "Rework backend internal approval authorization to be role-based using the caller’s role from userProfilesByPrincipal (do not use AccessControl #admin for approvals): SUPERADMIN can list approvals and set approval for any internal user (including ADMIN); ADMIN can list approvals and set approval for any internal user EXCEPT targets with role ADMIN or SUPERADMIN; all other roles are unauthorized. Implement helper(s) to read caller role (e.g., callerRoleText) and apply the rules in setApproval and listApprovals.",
       "reqIds": [
         "REQ-5"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Add a backend query endpoint for frontend visibility: public query func isSuperadminClaimed() : async Bool { superadminClaimed }.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Fix internal registration overwrite bug (unique INT IDs + CUSTOMER_SERVICE consistency)",
+  "projectName": "Patch internal-only registration, ID generation, superadmin claim visibility, and approval authorization",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

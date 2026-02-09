@@ -294,6 +294,7 @@ export interface backendInterface {
     getUserProfile(userId: string): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
+    isSuperadminClaimed(): Promise<boolean>;
     isValidRoleName(roleName: string): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     logAuditEntry(actionType: AuditActionType, metadata: string): Promise<void>;

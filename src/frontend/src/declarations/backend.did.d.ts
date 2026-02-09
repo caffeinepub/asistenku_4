@@ -272,6 +272,7 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[string], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
+  'isSuperadminClaimed' : ActorMethod<[], boolean>,
   'isValidRoleName' : ActorMethod<[string], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'logAuditEntry' : ActorMethod<[AuditActionType, string], undefined>,

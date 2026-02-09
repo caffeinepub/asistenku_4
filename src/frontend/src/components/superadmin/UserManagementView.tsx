@@ -4,8 +4,8 @@ import PartnerStatusSection from './PartnerStatusSection';
 import UserRoleUsersCard from './UserRoleUsersCard';
 import ActiveClientsCard from './ActiveClientsCard';
 import InternalPendingRegistrationCard from './InternalPendingRegistrationCard';
-import { 
-  useSearchUsers, 
+import {
+  useSearchUsers,
   useGetPartnersByStatus,
   useGetInternalUsers,
   useGetCustomerServiceUsers,
@@ -13,6 +13,7 @@ import {
   useApproveInternalUser,
   useRejectInternalUser,
 } from '@/hooks/useSuperadminUserManagement';
+import { useGetCallerUser } from '@/hooks/useQueries';
 import type { UserProfile } from '@/backend';
 
 export default function UserManagementView() {
@@ -21,6 +22,7 @@ export default function UserManagementView() {
   const [approvingUserId, setApprovingUserId] = useState<string | undefined>();
   const [rejectingUserId, setRejectingUserId] = useState<string | undefined>();
 
+  const { data: currentUser } = useGetCallerUser();
   const searchUsers = useSearchUsers();
   const pendingPartners = useGetPartnersByStatus('pending');
   const activePartners = useGetPartnersByStatus('active');
@@ -31,6 +33,8 @@ export default function UserManagementView() {
   const activeClients = useGetActiveClients();
   const approveInternalUser = useApproveInternalUser();
   const rejectInternalUser = useRejectInternalUser();
+
+  const viewerRole = currentUser?.role || '';
 
   const handleSearch = async (query: string, mode: 'userId' | 'principalId' | 'name') => {
     try {
@@ -147,6 +151,7 @@ export default function UserManagementView() {
           onReject={handleRejectInternal}
           approvingUserId={approvingUserId}
           rejectingUserId={rejectingUserId}
+          viewerRole={viewerRole}
         />
 
         <UserRoleUsersCard

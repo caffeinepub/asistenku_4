@@ -15,6 +15,7 @@ interface InternalPendingRegistrationCardProps {
   onReject: (userId: string) => Promise<void>;
   approvingUserId?: string;
   rejectingUserId?: string;
+  viewerRole?: string;
 }
 
 export default function InternalPendingRegistrationCard({
@@ -25,8 +26,24 @@ export default function InternalPendingRegistrationCard({
   onReject,
   approvingUserId,
   rejectingUserId,
+  viewerRole,
 }: InternalPendingRegistrationCardProps) {
-  const pendingUsers = users.filter(user => user.status === 'pending');
+  const pendingUsers = users.filter((user) => user.status === 'pending');
+
+  const canApproveReject = (userRole: string): boolean => {
+    const normalizedViewerRole = (viewerRole || '').trim().toUpperCase();
+    const normalizedUserRole = userRole.trim().toUpperCase();
+
+    if (normalizedViewerRole === 'SUPERADMIN') {
+      return true;
+    }
+
+    if (normalizedViewerRole === 'ADMIN') {
+      return !['ADMIN', 'SUPERADMIN'].includes(normalizedUserRole);
+    }
+
+    return false;
+  };
 
   const handleApprove = async (userId: string) => {
     try {
@@ -50,7 +67,7 @@ export default function InternalPendingRegistrationCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Internal Pending Registration</CardTitle>
+          <CardTitle>Internal Approval (Pending)</CardTitle>
           <CardDescription>Internal registrations awaiting approval</CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,7 +83,7 @@ export default function InternalPendingRegistrationCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Internal Pending Registration</CardTitle>
+          <CardTitle>Internal Approval (Pending)</CardTitle>
           <CardDescription>Internal registrations awaiting approval</CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,23 +98,21 @@ export default function InternalPendingRegistrationCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Internal Pending Registration</CardTitle>
+        <CardTitle>Internal Approval (Pending)</CardTitle>
         <CardDescription>Internal registrations awaiting approval</CardDescription>
       </CardHeader>
       <CardContent>
         {pendingUsers.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No pending internal registrations.
-          </div>
+          <div className="text-center py-8 text-muted-foreground">No pending internal registrations.</div>
         ) : (
           <div className="border rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Internal ID</TableHead>
+                  <TableHead>User ID</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Principal ID</TableHead>
-                  <TableHead>Requested Role</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -106,54 +121,55 @@ export default function InternalPendingRegistrationCard({
                   const isApproving = approvingUserId === user.id;
                   const isRejecting = rejectingUserId === user.id;
                   const isProcessing = isApproving || isRejecting;
+                  const canManage = canApproveReject(user.role);
 
                   return (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.id}</TableCell>
                       <TableCell>
-                        <TruncatedPrincipalCell principalId={user.principalId} />
-                      </TableCell>
-                      <TableCell>
                         <Badge variant="outline">{user.role}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                          pending
-                        </Badge>
+                        <TruncatedPrincipalCell principalId={user.principalId} />
                       </TableCell>
+                      <TableCell>{user.name || '-'}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleApprove(user.id)}
-                            disabled={isProcessing}
-                          >
-                            {isApproving ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Check className="h-4 w-4 mr-1" />
-                                Approve
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleReject(user.id)}
-                            disabled={isProcessing}
-                          >
-                            {isRejecting ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                        {canManage ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleApprove(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isApproving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleReject(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isRejecting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No permission</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

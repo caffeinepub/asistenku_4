@@ -1,4 +1,87 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-update-frontend-internal-daftar-internalregisterpage-to-present-a-single-form-with-role-dropdown-internal-roles-only-name-required-whatsapp-required-email-required-user-id-read-only-placeholder-showing-exactly-will-be-generated-and-principal-id-read-only-with-copy-on-successful-submit-show-a-success-ui-state-that-includes-the-message-pending-waiting-for-admin-approval-and-does-not-redirect-automatically",
+      "featureTitle": "Update frontend /internal/daftar (InternalRegisterPage) to present a single form with: Role dropdown (internal roles only), Name (required), WhatsApp (required), Email (required), User ID read-only placeholder showing exactly \"(will be generated)\", and Principal ID read-only with copy. On successful submit, show a success UI state that includes the message \"Pending — waiting for admin approval\" and does not redirect automatically.",
+      "files": [
+        "frontend/src/pages/InternalRegisterPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-internal-daftar-behavior-for-the-my-workspace-button-after-registration-when-clicked-it-must-fetch-the-caller-profile-getcalleruserprofile-via-existing-query-hook-and-if-status-is-pending-it-must-show-a-clear-pending-message-and-must-not-navigate-to-any-dashboard-route",
+      "featureTitle": "Update frontend /internal/daftar behavior for the \"My Workspace\" button after registration: when clicked, it must fetch the caller profile (getCallerUserProfile via existing query hook), and if status is pending it must show a clear pending message and must not navigate to any dashboard route.",
+      "files": [
+        "frontend/src/lib/internalRoles.ts",
+        "frontend/src/pages/InternalRegisterPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-internal-daftar-error-handling-to-map-backend-trap-messages-to-english-ui-strings-if-error-contains-user-already-has-a-profile-show-exactly-this-account-is-already-registered-please-log-in-if-error-indicates-invalid-role-show-exactly-role-is-not-available-otherwise-show-exactly-registration-failed-please-try-again",
+      "featureTitle": "Update frontend /internal/daftar error handling to map backend trap messages to English UI strings: if error contains \"User already has a profile\" show exactly \"This account is already registered. Please log in.\"; if error indicates invalid role show exactly \"Role is not available.\"; otherwise show exactly \"Registration failed. Please try again.\".",
+      "files": [
+        "frontend/src/pages/InternalRegisterPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-internal-login-to-hide-the-claim-superadmin-card-when-the-backend-indicates-superadmin-has-already-been-claimed-using-the-new-backend-query-issuperadminclaimed-do-not-call-claimsuperadmin-to-check-claimed-state-keep-other-internal-login-cards-and-routing-behavior-unchanged",
+      "featureTitle": "Update frontend /internal/login to hide the \"Claim Superadmin\" card when the backend indicates superadmin has already been claimed, using the new backend query isSuperadminClaimed() (do not call claimSuperadmin to check claimed state). Keep other internal login cards and routing behavior unchanged.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/InternalLoginPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
+      ],
+      "confidence": "high"
+    }
+  ]
 }
