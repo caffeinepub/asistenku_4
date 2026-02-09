@@ -1,27 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
-import { useRegisterInternalUser, useRegisterCustomerService, useGetCallerUser } from '@/hooks/useQueries';
+import { useRegisterInternalUser, useGetCallerUser, useValidateRoleName } from '@/hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import InternalGateGuard from '@/components/InternalGateGuard';
-
-const INTERNAL_ROLES = [
-    { id: 'FINANCE', label: 'Finance', description: 'Financial management and reporting' },
-    { id: 'SUPERVISOR', label: 'Supervisor', description: 'Team supervision and coordination' },
-    { id: 'MANAGEMENT', label: 'Management', description: 'Strategic management and planning' },
-    { id: 'ASISTENMU', label: 'Asistenmu', description: 'Direct client support and assistance' },
-    { id: 'CUSTOMER_SERVICE', label: 'Customer Service', description: 'Customer support and assistance' }
-];
+import { REGISTRATION_ROLES } from '@/lib/internalRoles';
 
 function InternalRegisterContent() {
     const navigate = useNavigate();
     const { identity, login, loginStatus } = useInternetIdentity();
     const registerInternal = useRegisterInternalUser();
-    const registerCS = useRegisterCustomerService();
+    const validateRole = useValidateRoleName();
     const { refetch: getCallerUser } = useGetCallerUser();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -36,22 +29,29 @@ function InternalRegisterContent() {
         }
 
         try {
-            if (role === 'CUSTOMER_SERVICE') {
-                await registerCS.mutateAsync();
-            } else {
-                await registerInternal.mutateAsync({
-                    role: role,
-                    name: '',
-                    email: '',
-                    whatsapp: ''
-                });
+            // Pre-validate role with backend
+            const isValid = await validateRole.mutateAsync(role);
+            if (!isValid) {
+                setError(`Role "${role}" is not recognized by the backend. Please contact support.`);
+                return;
             }
+
+            // Register using registerInternalUser for all internal roles including CUSTOMER_SERVICE
+            await registerInternal.mutateAsync({
+                role: role,
+                name: '',
+                email: '',
+                whatsapp: ''
+            });
+            
             setRegisteredRole(role);
             setSuccess(true);
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message?.includes('already exists') || err.message?.includes('already has a profile')) {
                 setError('You already have an account. Please login instead.');
+            } else if (err.message?.includes('Invalid internal role')) {
+                setError('This role is not available for registration. Please contact support.');
             } else {
                 setError('Registration failed. Please try again.');
             }
@@ -77,9 +77,24 @@ function InternalRegisterContent() {
                 return;
             }
 
+            // Check if user status is ACTIVE before allowing workspace access
+            const statusStr = String(user.status).toLowerCase().replace('#', '');
+            
             // Route to correct dashboard
             if (userRoleNormalized === 'CUSTOMER_SERVICE') {
+                if (statusStr !== 'active') {
+                    setError('Your account is pending approval. You cannot access the workspace yet.');
+                    return;
+                }
                 navigate({ to: '/customer-service' });
+            } else if (userRoleNormalized === 'ASISTENMU') {
+                navigate({ to: '/asistenmu/dashboard' });
+            } else if (userRoleNormalized === 'SUPERVISOR') {
+                navigate({ to: '/supervisor/dashboard' });
+            } else if (userRoleNormalized === 'MANAGEMENT') {
+                navigate({ to: '/management/dashboard' });
+            } else if (userRoleNormalized === 'FINANCE') {
+                navigate({ to: '/finance/dashboard' });
             } else {
                 navigate({ to: '/internal/role-mismatch' });
             }
@@ -140,7 +155,7 @@ function InternalRegisterContent() {
                 )}
 
                 <div className="grid md:grid-cols-2 gap-6">
-                    {INTERNAL_ROLES.map((role) => (
+                    {REGISTRATION_ROLES.map((role) => (
                         <Card key={role.id} className="hover:border-primary transition-colors">
                             <CardHeader>
                                 <CardTitle>{role.label}</CardTitle>
@@ -150,9 +165,9 @@ function InternalRegisterContent() {
                                 <Button
                                     className="w-full"
                                     onClick={() => handleRoleSelect(role.id)}
-                                    disabled={registerInternal.isPending || registerCS.isPending || loginStatus === 'logging-in'}
+                                    disabled={registerInternal.isPending || loginStatus === 'logging-in' || validateRole.isPending}
                                 >
-                                    {(registerInternal.isPending || registerCS.isPending)
+                                    {(registerInternal.isPending || validateRole.isPending)
                                         ? 'Registering...'
                                         : loginStatus === 'logging-in'
                                           ? 'Logging in...'

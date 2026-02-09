@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserProfile, InternalUserDTO, CustomerServiceUserDTO, TaskRecord } from '../backend';
-import { SearchMode, UserStatus } from '../backend';
+import type { UserProfile, InternalUserDTO, TaskRecord } from '../backend';
+import { SearchMode, UserStatus, ApprovalStatus } from '../backend';
 import { mapUILevelToBackend, mapUIStatusToBackend, getHourlyRateForLevel } from '@/lib/superadminUserMapping';
 
 export function useSearchUsers() {
@@ -101,13 +101,15 @@ export function useGetInternalUsers() {
 export function useGetCustomerServiceUsers() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<CustomerServiceUserDTO[]>({
+  return useQuery<InternalUserDTO[]>({
     queryKey: ['users', 'role', 'CUSTOMER_SERVICE'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
       try {
-        const csUsers = await actor.getAllCustomerServiceUsers();
+        const allInternalUsers = await actor.getAllInternalUsers();
+        // Filter for CUSTOMER_SERVICE role
+        const csUsers = allInternalUsers.filter(user => user.role === 'CUSTOMER_SERVICE');
         return csUsers;
       } catch (error) {
         console.error('Failed to fetch customer service users:', error);
@@ -378,10 +380,13 @@ export function useApproveInternalUser() {
         if (!userProfile) {
           throw new Error('User not found');
         }
-
-        // Use setApproval to approve the user
-        const principal = { toText: () => userProfile.principalId } as any;
-        await actor.setApproval(principal, { approved: 'approved' } as any);
+        
+        // Convert principal string to Principal object
+        const { Principal } = await import('@dfinity/principal');
+        const userPrincipal = Principal.fromText(userProfile.principalId);
+        
+        // Use the approval system to approve the user
+        await actor.setApproval(userPrincipal, ApprovalStatus.approved);
       } catch (error: any) {
         console.error('Failed to approve internal user:', error);
         if (error.message?.includes('Unauthorized')) {
@@ -394,7 +399,7 @@ export function useApproveInternalUser() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }
@@ -413,10 +418,13 @@ export function useRejectInternalUser() {
         if (!userProfile) {
           throw new Error('User not found');
         }
-
-        // Use setApproval to reject the user
-        const principal = { toText: () => userProfile.principalId } as any;
-        await actor.setApproval(principal, { rejected: 'rejected' } as any);
+        
+        // Convert principal string to Principal object
+        const { Principal } = await import('@dfinity/principal');
+        const userPrincipal = Principal.fromText(userProfile.principalId);
+        
+        // Use the approval system to reject the user
+        await actor.setApproval(userPrincipal, ApprovalStatus.rejected);
       } catch (error: any) {
         console.error('Failed to reject internal user:', error);
         if (error.message?.includes('Unauthorized')) {
@@ -429,7 +437,7 @@ export function useRejectInternalUser() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'internal'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }

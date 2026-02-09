@@ -13,7 +13,7 @@ function CustomerServiceDashboardContent() {
     const [activeMenu, setActiveMenu] = useState('ringkasan');
 
     const MENU_ITEMS = [
-        { label: 'Ringkasan', value: 'ringkasan' },
+        { label: 'Summary', value: 'ringkasan' },
         { label: 'User Management', value: 'users' },
         { label: 'Service Management', value: 'services' },
         { label: 'Task Management', value: 'tasks' },

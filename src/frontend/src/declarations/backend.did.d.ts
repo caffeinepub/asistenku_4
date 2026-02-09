@@ -33,12 +33,6 @@ export interface ClientRegistrationData {
   'email' : string,
   'company' : string,
 }
-export interface CustomerServiceUserDTO {
-  'id' : string,
-  'status' : UserStatus,
-  'name' : string,
-  'principalId' : string,
-}
 export interface InternalAccessCode {
   'code' : string,
   'lastUpdated' : bigint,
@@ -261,7 +255,6 @@ export interface _SERVICE {
   'getAccessCodes' : ActorMethod<[], Array<InternalAccessCode>>,
   'getActiveClientProfiles' : ActorMethod<[], Array<UserProfile>>,
   'getAllAuditLogsSorted' : ActorMethod<[string], AuditLogEntryList>,
-  'getAllCustomerServiceUsers' : ActorMethod<[], Array<CustomerServiceUserDTO>>,
   'getAllInternalUsers' : ActorMethod<[], Array<InternalUserDTO>>,
   'getAllPartnersByStatus' : ActorMethod<[UserStatus], Array<UserProfile>>,
   'getAllServices' : ActorMethod<[], Array<Service>>,
@@ -285,7 +278,6 @@ export interface _SERVICE {
   'manageAccessCode' : ActorMethod<[InternalCodeType, string], undefined>,
   'reactivatePartner' : ActorMethod<[string], undefined>,
   'registerClient' : ActorMethod<[string, string, string, string], string>,
-  'registerCustomerServiceUser' : ActorMethod<[], string>,
   'registerInternalUser' : ActorMethod<
     [string, string, string, string],
     string

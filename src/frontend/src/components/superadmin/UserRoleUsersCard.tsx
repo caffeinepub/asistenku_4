@@ -1,18 +1,18 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, AlertCircle } from 'lucide-react';
-import type { InternalUserDTO, CustomerServiceUserDTO, UserStatus } from '@/backend';
+import type { InternalUserDTO, UserStatus } from '@/backend';
 import CollapsibleCardSection from './CollapsibleCardSection';
 
 interface UserRoleUsersCardProps {
   title: string;
   description: string;
-  users: (InternalUserDTO | CustomerServiceUserDTO)[];
+  users: InternalUserDTO[];
   isLoading: boolean;
   error?: Error | null;
 }
 
 export default function UserRoleUsersCard({ title, description, users, isLoading, error }: UserRoleUsersCardProps) {
-  const getUserName = (user: InternalUserDTO | CustomerServiceUserDTO) => {
+  const getUserName = (user: InternalUserDTO) => {
     return user.name || 'N/A';
   };
 
@@ -52,7 +52,7 @@ export default function UserRoleUsersCard({ title, description, users, isLoading
               <TableHead>User ID</TableHead>
               <TableHead>Principal ID</TableHead>
               <TableHead>Name</TableHead>
-              {'role' in users[0] && <TableHead>Role</TableHead>}
+              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -62,13 +62,11 @@ export default function UserRoleUsersCard({ title, description, users, isLoading
                 <TableCell className="font-mono text-sm">{user.id}</TableCell>
                 <TableCell className="font-mono text-xs">{user.principalId.slice(0, 12)}...</TableCell>
                 <TableCell>{getUserName(user)}</TableCell>
-                {'role' in user && (
-                  <TableCell>
-                    <span className="px-2 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-                      {user.role}
-                    </span>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <span className="px-2 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                    {user.role}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 text-xs font-medium rounded-md border ${getStatusBadgeColor(user.status)}`}>
                     {user.status}

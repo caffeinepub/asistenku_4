@@ -23,7 +23,7 @@ function normalizeRole(role: string | undefined | null): string {
     return role.trim().toUpperCase();
 }
 
-// Helper to check if status is valid (active, pending, or suspended for partners)
+// Helper to check if status is valid based on role
 function isValidStatus(status: any, role: string): boolean {
     if (!status) return false;
     const statusStr = String(status).toLowerCase().replace('#', '');
@@ -34,7 +34,12 @@ function isValidStatus(status: any, role: string): boolean {
         return statusStr === 'active' || statusStr === 'pending' || statusStr === 'suspended';
     }
     
-    // Other roles: active or pending
+    // CUSTOMER_SERVICE requires ACTIVE status only
+    if (normalizedRole === 'CUSTOMER_SERVICE') {
+        return statusStr === 'active';
+    }
+    
+    // Other internal roles: active or pending
     return statusStr === 'active' || statusStr === 'pending';
 }
 
@@ -125,7 +130,7 @@ export default function AccessGate({ children, requiredRole, isInternal = false 
     if (isVerified) {
         return (
             <>
-                {isInternal && userStatus === 'pending' && (
+                {isInternal && userStatus === 'pending' && normalizeRole(requiredRole) !== 'CUSTOMER_SERVICE' && (
                     <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
                         <p className="text-sm text-yellow-800 text-center">
                             ⏳ Pending activation - Your account is awaiting approval

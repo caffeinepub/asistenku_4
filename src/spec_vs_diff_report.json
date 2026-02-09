@@ -1,55 +1,96 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T19:34:07.929Z",
-  "summary": "Frontend now calls a backend verification method instead of a mock and adds a Superadmin Pengaturan view + React Query hooks for fetching/updating access codes. However, key parts of the backend contract and the required code status support (including viewing/updating status and enforcing inactive codes as invalid) are not evidenced in the diff, and the Superadmin UI/hook only updates code values (not statuses).",
+  "generatedAt": "2026-02-09T03:36:10.880Z",
+  "summary": "The BuildRequest required backend-only changes limited to `backend/main.mo` around internal ID generation, upgrade-safe counter persistence, overwrite guards, authorization preservation, and consistent CUSTOMER_SERVICE handling. The diff shows multiple frontend changes (pages, hooks, components, routes) and does not provide enough visible backend implementation detail (backend file is truncated before the relevant logic), so the requested backend fixes cannot be verified as implemented from the provided evidence.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Backend verification must return ok=true and a backend-provided route string (/internal/login for Code A, /internal/daftar for Code B), and reject others as invalid without trapping.",
-      "reason": "Frontend expects `actor.verifyAccessCode(code)` to return `InternalLoginType | null` and then maps that enum to routes on the client; there is no evidence of a backend response that includes a route string and ok flag as specified.",
+      "requirement": "Update `backend/main.mo` `registerInternalUser(role, name, email, whatsapp)` to generate unique internal user IDs using a counter-based `INT-<number>` strategy (not derived from caller Principal) so repeated calls by the same SUPERADMIN do not overwrite.",
+      "reason": "`backend/main.mo` is truncated and the diff excerpt does not include `registerInternalUser` or any counter-based ID generation logic; therefore implementation of the required ID strategy cannot be confirmed.",
       "evidence": [
-        "frontend/src/hooks/useInternalAccessCodes.ts",
-        "frontend/src/pages/InternalGatePage.tsx"
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Backend query API must return internal access codes including: code type (A/B), code value, last updated timestamp, and a status field.",
-      "reason": "The only backend type shown for internal access codes includes `code`, `codeType`, and `lastUpdated`—no `status` field is present in the diff excerpt.",
+      "requirement": "Ensure the internal ID counter is upgrade-safe and does not reset/collide with existing `INT-*` IDs; add minimal conditional migration if needed without modifying existing UserProfile records.",
+      "reason": "No evidence in the diff summary of a stable counter, preupgrade/postupgrade hooks, or migration logic that derives counter state from existing `userProfilesById` entries.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Backend update API must allow SUPERADMIN to set Code A value, Code B value, and their statuses; non-SUPERADMIN callers rejected; inactive/disabled codes must fail verification.",
-      "reason": "The frontend mutation calls `actor.manageAccessCode(codeType, newCode)` and the settings UI only edits `newCode`; there is no evidence of any status parameter, status enforcement in verification, or authorization checks in the backend diff excerpt.",
+      "id": "REQ-3",
+      "requirement": "Add a safety guard in `registerInternalUser` to prevent silent overwrite in `userProfilesById` if a generated `userId` already exists (retry or trap).",
+      "reason": "The diff excerpt does not show any collision check around `userProfilesById` insertion or any retry/trap behavior; cannot verify the guard exists.",
       "evidence": [
-        "frontend/src/hooks/useInternalAccessCodes.ts",
-        "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-4",
-      "requirement": "Superadmin Pengaturan tab must display Code A and Code B with label, current code value, status, and last updated time; and provide controls to update both code values and statuses.",
-      "reason": "The added settings view state and save handlers only cover code values (`codeAValue`, `codeBValue`) and update via `newCode` only; status viewing/editing is not evidenced in the shown code.",
+      "requirement": "Keep `registerInternalUser` authorization exactly as currently is: only callable by a caller whose existing profile role is `SUPERADMIN`, and anonymous callers rejected.",
+      "reason": "The diff summary does not show the `registerInternalUser` authorization logic; cannot confirm it remains unchanged and correct.",
       "evidence": [
-        "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
-        "frontend/src/hooks/useInternalAccessCodes.ts"
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Make CUSTOMER_SERVICE handling fully consistent with other internal roles in backend registration and returned/listed data; avoid special-case DTO/paths that lose role information; store in both `userProfilesById` and `userProfilesByPrincipal` with role preserved and status `#pending`.",
+      "reason": "No visible backend changes demonstrate removal of any special-case CUSTOMER_SERVICE DTO/path or confirm consistent persistence in both maps; backend relevant portions are not shown.",
+      "evidence": [
+        "backend/main.mo (truncated)"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.68,
+  "hallucinated_features": [
+    {
+      "description": "Frontend UI changes for internal user listing card (table rendering, status badge colors, error/loading states).",
+      "reason": "BuildRequest explicitly constrained changes to backend only and prohibited frontend/UI changes.",
+      "evidence": [
+        "frontend/src/components/superadmin/UserRoleUsersCard.tsx"
+      ]
+    },
+    {
+      "description": "Frontend React Query hook changes including internal registration hook behavior and removal/adjustment of hooks (e.g., role validation and internal registration usage).",
+      "reason": "Backend-only constraint; frontend hook changes were not requested.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "description": "Frontend superadmin user management hooks adding/altering internal user queries and CUSTOMER_SERVICE filtering on the client side.",
+      "reason": "Not requested; BuildRequest scope was backend logic consistency, not new/changed frontend querying/filtering behavior.",
+      "evidence": [
+        "frontend/src/hooks/useSuperadminUserManagement.ts"
+      ]
+    },
+    {
+      "description": "Frontend internal registration page changes including backend role pre-validation and CUSTOMER_SERVICE-specific navigation/status checks.",
+      "reason": "Explicit non-goal: do not change internal login/registration UI behavior or frontend role cards; backend-only changes requested.",
+      "evidence": [
+        "frontend/src/pages/InternalRegisterPage.tsx"
+      ]
+    },
+    {
+      "description": "Frontend routing/page additions/changes including a new `/customer-service` route and multiple landing/login/register UI updates (as described in the frontend summaries).",
+      "reason": "BuildRequest prohibited changes to routing, pages, and any frontend/UI code, and prohibited adding new features.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/App.tsx (mentioned in frontend-file-summaries.txt)"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
-    "frontend/src/hooks/useInternalAccessCodes.ts",
-    "frontend/src/pages/InternalGatePage.tsx",
-    "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx",
+    "frontend/src/components/superadmin/UserRoleUsersCard.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useSuperadminUserManagement.ts",
+    "frontend/src/pages/InternalRegisterPage.tsx",
     "project_state.json"
   ]
 }

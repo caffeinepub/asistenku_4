@@ -1,121 +1,125 @@
 {
   "kind": "build_request",
-  "title": "Activate real internal access-code verification and Superadmin settings to view/update Code A & B",
+  "title": "Fix internal registration overwrite bug (unique INT IDs + CUSTOMER_SERVICE consistency)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement backend support for real internal access-code verification so that entering Code A routes to \"/internal/login\" (Asistenku masuk) and entering Code B routes to \"/internal/daftar\" (Asistenku daftar). The backend must reject any other code as invalid.",
+      "text": "Update `backend/main.mo` `registerInternalUser(role, name, email, whatsapp)` to generate a unique internal user ID that does not depend on the caller Principal (replace any `\"INT-\" # caller.toText()` strategy). Use an internal counter-based strategy so a single SUPERADMIN can register multiple internal users without overwriting entries in `userProfilesById`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-User-1"
+          "msg-1"
         ],
         "quotes": [
-          "1. Kode A = Asistenku masuk Kode B = Asistenku daftar",
-          "3. A -> /internal/login B-> /internal/daftar"
+          "Bug sumbernya ada di backend/main.mo pada fungsi registerInternalUser yang membuat userId = \"INT-\" + caller principal",
+          "GANTI total strategi ID ini menjadi ID unik berbasis counter internal (paling aman)"
         ]
       },
       "acceptanceCriteria": [
-        "Calling the backend verification method with the stored Code A returns ok=true and route=\"/internal/login\".",
-        "Calling the backend verification method with the stored Code B returns ok=true and route=\"/internal/daftar\".",
-        "Calling the backend verification method with any other input returns ok=false (or an equivalent explicit invalid response) without trapping.",
-        "The verification method can be called anonymously (since it is used before internal login/register)."
+        "Calling `registerInternalUser(...)` multiple times from the same SUPERADMIN results in different returned IDs each time.",
+        "`userProfilesById` contains one distinct entry per internal registration; no registration silently replaces an existing entry keyed by the same userId.",
+        "The generated internal ID format remains `INT-<number>` (counter-based), not `INT-<principal>`."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add backend APIs for Superadmin to load/view the current internal access codes and their status, and to update/rotate/change Code A and Code B along with their status.",
+      "text": "Ensure the internal ID counter used by `registerInternalUser` remains safe across canister upgrades so it does not reset to a value that could collide with existing `INT-*` IDs already stored in `userProfilesById`. If an upgrade/migration step is necessary under current state persistence, add the minimal conditional migration to preserve or recompute the counter from existing stored profiles.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-User-1"
+          "msg-1"
         ],
         "quotes": [
-          "2. Iya superadmin bisa melihat daftar semua kode yang aktif + statusnya dan mengubah kodenya juga"
+          "ID harus unik untuk setiap internal user yang didaftarkan",
+          "Pastikan tidak ada kemungkinan overwrite di userProfilesById."
         ]
       },
       "acceptanceCriteria": [
-        "There is a query API that returns a list of internal access codes including: code type (A/B), the code value, last updated timestamp, and a status field.",
-        "There is an update API that allows SUPERADMIN to set Code A value, Code B value, and their statuses.",
-        "Non-SUPERADMIN callers are rejected (trap or error result) when attempting to view or update codes.",
-        "If a status marks a code as inactive/disabled, verification using that code returns invalid."
+        "After a canister upgrade, a new `registerInternalUser(...)` call produces an `INT-*` ID that does not already exist in `userProfilesById`.",
+        "No existing `UserProfile` records are modified as part of this change (only the counter/state needed for ID generation)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Replace the mockResponse behavior in frontend InternalGatePage with real backend verification: submit the entered code to the backend and navigate to the backend-provided route only when verification succeeds; otherwise show an invalid-code error.",
-      "target": "frontend",
+      "text": "Add a minimal safety guard in `registerInternalUser` to prevent silent overwrite in `userProfilesById`: if the newly generated `userId` already exists in `userProfilesById`, the function must not overwrite the existing profile (e.g., retry generating the next counter value until free, or trap with a clear error).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-User-1"
+          "msg-1"
         ],
         "quotes": [
-          "Oke aku ingin kamu mengakfifkan logika aslinya"
+          "Tambahkan guard kecil agar tidak overwrite byId secara diam-diam: Jika userProfilesById.get(userId) sudah ada (should not happen setelah counter), tetap aman."
         ]
       },
       "acceptanceCriteria": [
-        "InternalGatePage no longer routes all non-empty codes to \"/internal/login\".",
-        "Entering Code A successfully navigates to \"/internal/login\".",
-        "Entering Code B successfully navigates to \"/internal/daftar\".",
-        "Entering an invalid (or inactive) code shows an error message and does not navigate.",
-        "The existing sessionStorage flags (\"internalGatePassed\", \"internalGatePassedAt\") are only set on successful verification, as they are today."
+        "If a generated `userId` is already present in `userProfilesById`, the implementation does not call `userProfilesById.add(userId, ...)` with a different profile for that key.",
+        "The behavior in the collision case is deterministic and safe (either retries to a free ID or traps)."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Implement the Superadmin Dashboard \"Pengaturan\" tab content to load and display a list of all internal access codes (A and B) with their status, and provide controls for Superadmin to update the code values and statuses.",
-      "target": "frontend",
+      "text": "Keep `registerInternalUser` authorization exactly as it currently is: it must remain callable only by a caller whose existing profile role is `SUPERADMIN`, and anonymous callers must be rejected.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-User-1"
+          "msg-1"
         ],
         "quotes": [
-          "mengakfifkan untuk load/view dan mengganti kode A dan B di dashboard superadmin di tab pengaturan",
-          "superadmin bisa melihat daftar semua kode yang aktif + statusnya dan mengubah kodenya juga"
+          "Pastikan registerInternalUser hanya bisa dipanggil oleh SUPERADMIN seperti aturan sekarang."
         ]
       },
       "acceptanceCriteria": [
-        "The placeholder \"Settings coming soon.\" content is replaced with a working settings view under the existing menu item value \"pengaturan\".",
-        "The settings view displays Code A and Code B entries, each showing: label, current code value, status, and last updated time.",
-        "Superadmin can edit/save the code value and status for Code A and Code B from this screen.",
-        "The UI includes loading and error states consistent with other Superadmin cards/pages (spinners/skeletons and readable error text).",
-        "All user-facing text introduced in this settings view is in English."
+        "Anonymous callers cannot register internal users.",
+        "A non-SUPERADMIN caller cannot register internal users.",
+        "A SUPERADMIN caller can still register internal users as before, except now IDs do not overwrite."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Add/extend frontend React Query hooks to call the new backend APIs for verifying internal access codes and for Superadmin to fetch/update the internal access codes; ensure queries are invalidated/refetched after updates so the settings list stays current.",
-      "target": "frontend",
+      "text": "Make `CUSTOMER_SERVICE` handling fully consistent with other internal roles in backend registration and returned/listed data: when `registerInternalUser` is called with role `CUSTOMER_SERVICE`, it must create the same `UserProfile` structure as other internal roles (role preserved as `CUSTOMER_SERVICE`, status `#pending`, stored in both `userProfilesById` and `userProfilesByPrincipal`). Remove/avoid any special-case DTO or list/return path that causes CUSTOMER_SERVICE users to lose role information or be treated differently from other internal roles.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-User-1"
+          "msg-1"
         ],
         "quotes": [
-          "mengakfifkan untuk load/view"
+          "Pastikan CUSTOMER_SERVICE diperlakukan sama seperti internal role lain",
+          "Jangan membuat jalur DTO khusus yang menyebabkan CS berbeda perlakuan saat login/approval. Jika ada type/DTO khusus CustomerServiceUserDTO yang tidak membawa role, pastikan fungsi list/return data untuk CS tetap menggunakan data yang bersumber dari UserProfile dan role tetap dapat dikenali sebagai \"CUSTOMER_SERVICE\"."
         ]
       },
       "acceptanceCriteria": [
-        "There is a React Query query for fetching the current internal access codes for Superadmin settings.",
-        "There is a React Query mutation for updating codes/statuses and it triggers a refetch/invalidates the codes query on success.",
-        "InternalGatePage uses a dedicated function/hook that calls the backend verification method instead of a mock response.",
-        "No changes are made to immutable hook paths listed in SYSTEM_CONTEXT (compose via new hooks/files instead)."
+        "Registering an internal user with role `CUSTOMER_SERVICE` stores a `UserProfile` whose `role == \"CUSTOMER_SERVICE\"`, `status == #pending`, and `internalData` is set (same shape as other internal roles).",
+        "Any backend method(s) that return customer service user records include enough information to correctly identify role as `CUSTOMER_SERVICE` from `UserProfile` (no loss of role due to a specialized DTO path).",
+        "CUSTOMER_SERVICE remains present in both `validRoles` and `internalRoles` (no removal or renaming)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; introduce backend/migration.mo only if required to preserve existing stable state when adding new fields/state.",
-    "Do not edit files under frontend/src/components/ui (read-only UI components must be composed).",
-    "Do not edit immutable frontend paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts/tsx, frontend/src/main.tsx).",
-    "All new user-facing text added by this change must be in English."
+    "Backend changes only: limit modifications to `backend/main.mo` logic for internal ID generation in `registerInternalUser`, and consistency of persistence in `userProfilesById` / `userProfilesByPrincipal`, plus any minimal conditional migration strictly required to prevent ID collisions after upgrade.",
+    "Do not change routing, pages, or any frontend/UI code.",
+    "Do not add new features.",
+    "Do not add new fields to `UserProfile`.",
+    "Do not create new roles or new statuses."
   ],
   "nonGoals": [
-    "Implementing third-party authentication (only Internet Identity is supported).",
-    "Adding new routing paths beyond the existing \"/internal\", \"/internal/login\", and \"/internal/daftar\" routes.",
-    "Building full audit-log UI; only code management and verification are in scope."
+    "Refactoring unrelated backend modules (services, tasks, layananku, wallets, audit logs).",
+    "Changing internal login UI behavior or any frontend role cards.",
+    "Adding new registration flows or adding a target principal parameter to `registerInternalUser` (signature changes not requested).",
+    "Introducing new DTO concepts beyond what is minimally required to keep CUSTOMER_SERVICE role recognizable and consistent."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

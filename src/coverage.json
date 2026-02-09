@@ -1,67 +1,49 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T19:34:07.933Z",
+  "generatedAt": "2026-02-09T03:36:10.883Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 5,
-    "implemented": 3,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Implement backend support for real internal access-code verification so that entering Code A routes to \"/internal/login\" (Asistenku masuk) and entering Code B routes to \"/internal/daftar\" (Asistenku daftar). The backend must reject any other code as invalid.",
+        "summary": "Update `backend/main.mo` `registerInternalUser(role, name, email, whatsapp)` to generate a unique internal user ID that does not depend on the caller Principal (replace any `\"INT-\" # caller.toText()` strategy). Use an internal counter-based strategy so a single SUPERADMIN can register multiple internal users without overwriting entries in `userProfilesById`.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Add backend APIs for Superadmin to load/view the current internal access codes and their status, and to update/rotate/change Code A and Code B along with their status.",
+        "summary": "Ensure the internal ID counter used by `registerInternalUser` remains safe across canister upgrades so it does not reset to a value that could collide with existing `INT-*` IDs already stored in `userProfilesById`. If an upgrade/migration step is necessary under current state persistence, add the minimal conditional migration to preserve or recompute the counter from existing stored profiles.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Replace the mockResponse behavior in frontend InternalGatePage with real backend verification: submit the entered code to the backend and navigate to the backend-provided route only when verification succeeds; otherwise show an invalid-code error.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/InternalGatePage.tsx",
-          "frontend/src/hooks/useInternalAccessCodes.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/InternalGatePage.tsx",
-          "frontend/src/hooks/useInternalAccessCodes.ts"
-        ]
+        "summary": "Add a minimal safety guard in `registerInternalUser` to prevent silent overwrite in `userProfilesById`: if the newly generated `userId` already exists in `userProfilesById`, the function must not overwrite the existing profile (e.g., retry generating the next counter value until free, or trap with a clear error).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-4",
-        "summary": "Implement the Superadmin Dashboard \"Pengaturan\" tab content to load and display a list of all internal access codes (A and B) with their status, and provide controls for Superadmin to update the code values and statuses.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
-          "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
-          "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx"
-        ]
+        "summary": "Keep `registerInternalUser` authorization exactly as it currently is: it must remain callable only by a caller whose existing profile role is `SUPERADMIN`, and anonymous callers must be rejected.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-5",
-        "summary": "Add/extend frontend React Query hooks to call the new backend APIs for verifying internal access codes and for Superadmin to fetch/update the internal access codes; ensure queries are invalidated/refetched after updates so the settings list stays current.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useInternalAccessCodes.ts",
-          "frontend/src/backend.d.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useInternalAccessCodes.ts",
-          "frontend/src/backend.d.ts"
-        ]
+        "summary": "Make `CUSTOMER_SERVICE` handling fully consistent with other internal roles in backend registration and returned/listed data: when `registerInternalUser` is called with role `CUSTOMER_SERVICE`, it must create the same `UserProfile` structure as other internal roles (role preserved as `CUSTOMER_SERVICE`, status `#pending`, stored in both `userProfilesById` and `userProfilesByPrincipal`). Remove/avoid any special-case DTO or list/return path that causes CUSTOMER_SERVICE users to lose role information or be treated differently from other internal roles.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -73,12 +55,12 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/superadmin/SuperadminInternalAccessCodesSettingsView.tsx",
+    "frontend/src/components/superadmin/UserRoleUsersCard.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useInternalAccessCodes.ts",
-    "frontend/src/pages/InternalGatePage.tsx",
-    "frontend/src/pages/superadmin/SuperadminDashboardPage.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useSuperadminUserManagement.ts",
+    "frontend/src/pages/InternalRegisterPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

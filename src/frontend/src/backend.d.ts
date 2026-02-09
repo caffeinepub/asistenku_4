@@ -63,12 +63,6 @@ export interface Task {
     schedule: Schedule;
 }
 export type AuditLogEntryList = Array<AuditLogEntry>;
-export interface CustomerServiceUserDTO {
-    id: string;
-    status: UserStatus;
-    name: string;
-    principalId: string;
-}
 export interface PartnerRegistrationData {
     name: string;
     hourlyRate: bigint;
@@ -283,7 +277,6 @@ export interface backendInterface {
     getAccessCodes(): Promise<Array<InternalAccessCode>>;
     getActiveClientProfiles(): Promise<Array<UserProfile>>;
     getAllAuditLogsSorted(_sortOrder: string): Promise<AuditLogEntryList>;
-    getAllCustomerServiceUsers(): Promise<Array<CustomerServiceUserDTO>>;
     getAllInternalUsers(): Promise<Array<InternalUserDTO>>;
     getAllPartnersByStatus(status: UserStatus): Promise<Array<UserProfile>>;
     getAllServices(): Promise<Array<Service>>;
@@ -307,7 +300,6 @@ export interface backendInterface {
     manageAccessCode(codeType: InternalCodeType, newCode: string): Promise<void>;
     reactivatePartner(partnerId: string): Promise<void>;
     registerClient(name: string, email: string, whatsapp: string, company: string): Promise<string>;
-    registerCustomerServiceUser(): Promise<string>;
     registerInternalUser(role: string, name: string, email: string, whatsapp: string): Promise<string>;
     registerPartner(name: string, email: string, whatsapp: string, skills: string, domisili: string, level: PartnerLevel, hourlyRate: bigint): Promise<string>;
     rejectPartner(partnerId: string): Promise<void>;

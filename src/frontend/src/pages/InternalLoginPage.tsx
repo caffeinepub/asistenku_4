@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '@/hooks/useInternetIdentity';
-import { useGetCallerUser, useClaimSuperadmin } from '@/hooks/useQueries';
+import { useGetCallerUser, useClaimSuperadmin, useValidateRoleName } from '@/hooks/useQueries';
 import { useActor } from '@/hooks/useActor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,15 +10,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import InternalGateGuard from '@/components/InternalGateGuard';
-
-const INTERNAL_ROLES = [
-    { id: 'ADMIN', label: 'Admin', route: '/admin/dashboard' },
-    { id: 'ASISTENMU', label: 'Asistenmu', route: '/asistenmu/dashboard' },
-    { id: 'SUPERVISOR', label: 'Supervisor', route: '/supervisor/dashboard' },
-    { id: 'MANAGEMENT', label: 'Management', route: '/management/dashboard' },
-    { id: 'FINANCE', label: 'Finance', route: '/finance/dashboard' },
-    { id: 'CUSTOMER_SERVICE', label: 'Customer Service', route: '/customer-service' }
-];
+import { LOGIN_ROLES, SUPERADMIN_ROLE } from '@/lib/internalRoles';
 
 // Helper to normalize role for comparison
 function normalizeRole(role: string | undefined | null): string {
@@ -30,8 +22,9 @@ function InternalLoginContent() {
     const navigate = useNavigate();
     const { identity, login, loginStatus, clear } = useInternetIdentity();
     const { actor, isFetching: actorFetching } = useActor();
-    const { refetch: getCallerUser } = useGetCallerUser();
+    const { data: userProfile, refetch: getCallerUser } = useGetCallerUser();
     const claimSuperadmin = useClaimSuperadmin();
+    const validateRole = useValidateRoleName();
     const [workspaceLoading, setWorkspaceLoading] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showSuperadminClaim, setShowSuperadminClaim] = useState(true);
@@ -61,6 +54,14 @@ function InternalLoginContent() {
         setErrorMessage(null);
 
         try {
+            // Pre-validate role with backend
+            const isValid = await validateRole.mutateAsync(roleId);
+            if (!isValid) {
+                setErrorMessage(`Role "${roleId}" is not recognized by the backend. Please contact support.`);
+                setWorkspaceLoading(null);
+                return;
+            }
+
             const { data: user } = await getCallerUser();
 
             if (!user) {
@@ -77,7 +78,17 @@ function InternalLoginContent() {
                 return;
             }
 
-            const roleRoute = INTERNAL_ROLES.find((r) => r.id === roleId)?.route;
+            // Check status for CUSTOMER_SERVICE
+            if (requiredRoleNormalized === 'CUSTOMER_SERVICE') {
+                const statusStr = String(user.status).toLowerCase().replace('#', '');
+                if (statusStr !== 'active') {
+                    setErrorMessage('Your Customer Service account is pending approval. Please wait for activation.');
+                    setWorkspaceLoading(null);
+                    return;
+                }
+            }
+
+            const roleRoute = LOGIN_ROLES.find((r) => r.id === roleId)?.route;
             if (roleRoute) {
                 navigate({ to: roleRoute as any });
             }
@@ -126,6 +137,14 @@ function InternalLoginContent() {
         }
     };
 
+    // Check if CUSTOMER_SERVICE workspace button should be disabled
+    const isCSDisabled = (roleId: string) => {
+        if (roleId !== 'CUSTOMER_SERVICE') return false;
+        if (!userProfile) return true;
+        const statusStr = String(userProfile.status).toLowerCase().replace('#', '');
+        return statusStr !== 'active';
+    };
+
     return (
         <div className="min-h-screen bg-background p-6">
             <div className="container mx-auto max-w-6xl">
@@ -168,7 +187,7 @@ function InternalLoginContent() {
                     {showSuperadminClaim && isAuthenticated && isActorReady && (
                         <Card className="border-primary">
                             <CardHeader>
-                                <CardTitle>Superadmin</CardTitle>
+                                <CardTitle>{SUPERADMIN_ROLE.label}</CardTitle>
                                 <CardDescription>First-time claim only</CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -183,24 +202,38 @@ function InternalLoginContent() {
                         </Card>
                     )}
 
-                    {INTERNAL_ROLES.map((role) => (
-                        <Card key={role.id}>
-                            <CardHeader>
-                                <CardTitle>{role.label}</CardTitle>
-                                <CardDescription>Access {role.label} workspace</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleWorkspaceClick(role.id)}
-                                    disabled={!canInteract || workspaceLoading === role.id}
-                                >
-                                    {workspaceLoading === role.id ? 'Loading...' : 'My Workspace'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {LOGIN_ROLES.map((role) => {
+                        const isDisabled = !canInteract || workspaceLoading === role.id || isCSDisabled(role.id);
+                        const buttonText = workspaceLoading === role.id 
+                            ? 'Loading...' 
+                            : isCSDisabled(role.id)
+                              ? 'Pending Approval'
+                              : 'My Workspace';
+
+                        return (
+                            <Card key={role.id}>
+                                <CardHeader>
+                                    <CardTitle>{role.label}</CardTitle>
+                                    <CardDescription>Access {role.label} workspace</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button
+                                        className="w-full"
+                                        variant="outline"
+                                        onClick={() => handleWorkspaceClick(role.id)}
+                                        disabled={isDisabled}
+                                    >
+                                        {buttonText}
+                                    </Button>
+                                    {role.id === 'CUSTOMER_SERVICE' && isCSDisabled(role.id) && (
+                                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                                            Awaiting activation
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             </div>
         </div>

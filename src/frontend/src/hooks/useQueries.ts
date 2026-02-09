@@ -82,21 +82,6 @@ export function useRegisterInternalUser() {
   });
 }
 
-export function useRegisterCustomerService() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.registerCustomerServiceUser();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
-  });
-}
-
 export function useClaimSuperadmin() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -121,7 +106,7 @@ export function useClaimSuperadmin() {
 }
 
 export function useGetAllServices() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<Service[]>({
     queryKey: ['services'],
@@ -129,6 +114,17 @@ export function useGetAllServices() {
       if (!actor) return [];
       return actor.getAllServices();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useValidateRoleName() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async (roleName: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.isValidRoleName(roleName);
+    },
   });
 }

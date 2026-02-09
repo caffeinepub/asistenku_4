@@ -8,6 +8,7 @@ import Order "mo:core/Order";
 import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Int "mo:core/Int";
+import Char "mo:core/Char";
 import Iter "mo:core/Iter";
 
 import MixinAuthorization "authorization/MixinAuthorization";
@@ -43,13 +44,6 @@ actor {
     name : Text;
     principalId : Text;
     role : Text;
-    status : UserStatus.UserStatus;
-  };
-
-  type CustomerServiceUserDTO = {
-    id : Text;
-    name : Text;
-    principalId : Text;
     status : UserStatus.UserStatus;
   };
 
@@ -423,6 +417,7 @@ actor {
   var clientCounter = 0;
   var partnerCounter = 0;
   var customerServiceCounter = 0;
+  var internalUserCounter = 0;
   var superadminClaimed = false;
   var _isInitialized = false;
   var auditLogCounter = 0;
@@ -463,12 +458,13 @@ actor {
     "SUPERVISOR",
     "MANAGEMENT",
     "FINANCE",
+    "CUSTOMER_SERVICE",
   ]);
 
   func normalizeRole(role : Text) : Text {
     role.map(func(c : Char) : Char {
       if (c >= 'a' and c <= 'z') {
-        Char.fromNat32(Char.toNat32(c) - 32);
+        Char.fromNat32(c.toNat32() - 32);
       } else {
         c;
       };
@@ -692,6 +688,18 @@ actor {
     "TS-" # zeros # paddedNumber;
   };
 
+  private func generateInternalUserId() : Text {
+    internalUserCounter += 1;
+    let paddedNumber = internalUserCounter.toText();
+    var zeros = "";
+    var i = 0;
+    while (i < 6 - paddedNumber.size()) {
+      zeros := zeros # "0";
+      i += 1;
+    };
+    "INT-" # zeros # paddedNumber;
+  };
+
   public shared ({ caller }) func registerClient(name : Text, email : Text, whatsapp : Text, company : Text) : async Text {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot register");
@@ -794,30 +802,43 @@ actor {
 
     let normalizedRole = normalizeRole(role);
     if (not isValidInternalRole(normalizedRole)) {
-      Runtime.trap("Invalid internal role");
+      Runtime.trap("Invalid internal role. Offered roles are { SUPERADMIN, ADMIN, ASISTENMU, SUPERVISOR, MANAGEMENT, FINANCE, CUSTOMER_SERVICE }");
     };
 
-    let userId = "INT-" # caller.toText();
-    let internalData : InternalRegistrationData.InternalRegistrationData = {
-      name = name;
-      email = email;
-      whatsapp = whatsapp;
+    var userId = "";
+    var retryCount = 0;
+
+    while (retryCount < 10) {
+      userId := generateInternalUserId();
+      switch (userProfilesById.get(userId)) {
+        case (null) {
+          let internalData : InternalRegistrationData.InternalRegistrationData = {
+            name = name;
+            email = email;
+            whatsapp = whatsapp;
+          };
+
+          let profile : UserProfile.UserProfile = {
+            id = userId;
+            principalId = caller.toText();
+            role = normalizedRole;
+            status = #pending;
+            clientData = null;
+            partnerData = null;
+            internalData = ?internalData;
+          };
+
+          userProfilesById.add(userId, profile);
+          userProfilesByPrincipal.add(caller, profile);
+          return userId;
+        };
+        case (?_) {
+          retryCount += 1;
+        };
+      };
     };
 
-    let profile : UserProfile.UserProfile = {
-      id = userId;
-      principalId = caller.toText();
-      role = normalizedRole;
-      status = #pending;
-      clientData = null;
-      partnerData = null;
-      internalData = ?internalData;
-    };
-
-    userProfilesById.add(userId, profile);
-    userProfilesByPrincipal.add(caller, profile);
-
-    userId;
+    Runtime.trap("Failed to generate unique internal user ID after multiple attempts");
   };
 
   public shared ({ caller }) func claimSuperadmin() : async Text {
@@ -1405,14 +1426,6 @@ actor {
     internalUsersArray.map(func(p) { { id = p.id; name = ""; principalId = p.principalId; role = p.role; status = p.status } });
   };
 
-  public query ({ caller }) func getAllCustomerServiceUsers() : async [CustomerServiceUserDTO] {
-    onlySuperadminNotAnonymous(caller);
-
-    let csUsersArray = userProfilesById.values().toArray().filter(func(p) { normalizeRole(p.role) == "CUSTOMER_SERVICE" });
-
-    csUsersArray.map(func(p) { { id = p.id; name = ""; principalId = p.principalId; status = p.status } });
-  };
-
   public query ({ caller }) func searchUsersByMode(searchInput : Text, searchMode : SearchMode) : async [UserProfile.UserProfile] {
     onlySuperadminNotAnonymous(caller);
 
@@ -1563,45 +1576,6 @@ actor {
 
   public shared ({ caller }) func rejectPartnerProposal(_proposalId : Text) : async () {
     onlySuperadminNotAnonymous(caller);
-  };
-
-  public shared ({ caller }) func registerCustomerServiceUser() : async Text {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot register");
-    };
-
-    switch (getCallerProfile(caller)) {
-      case (?_) {
-        Runtime.trap("User already has a profile");
-      };
-      case (null) {};
-    };
-
-    customerServiceCounter += 1;
-    let paddedNumber = customerServiceCounter.toText();
-    let padding = paddedNumber.size();
-    var zeros = "";
-    var i = padding;
-    while (i < 6) {
-      zeros := zeros # "0";
-      i += 1;
-    };
-
-    let userId = "CS-" # zeros # paddedNumber;
-    let profile : UserProfile.UserProfile = {
-      id = userId;
-      principalId = caller.toText();
-      role = "CUSTOMER_SERVICE";
-      status = #pending;
-      clientData = null;
-      partnerData = null;
-      internalData = null;
-    };
-
-    userProfilesById.add(userId, profile);
-    userProfilesByPrincipal.add(caller, profile);
-
-    userId;
   };
 
   public type SearchMode = {

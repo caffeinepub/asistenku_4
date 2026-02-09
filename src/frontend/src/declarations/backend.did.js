@@ -166,12 +166,6 @@ export const AuditLogEntry = IDL.Record({
   'principalId' : IDL.Text,
 });
 export const AuditLogEntryList = IDL.Vec(AuditLogEntry);
-export const CustomerServiceUserDTO = IDL.Record({
-  'id' : IDL.Text,
-  'status' : UserStatus,
-  'name' : IDL.Text,
-  'principalId' : IDL.Text,
-});
 export const InternalUserDTO = IDL.Record({
   'id' : IDL.Text,
   'status' : UserStatus,
@@ -298,11 +292,6 @@ export const idlService = IDL.Service({
       [AuditLogEntryList],
       ['query'],
     ),
-  'getAllCustomerServiceUsers' : IDL.Func(
-      [],
-      [IDL.Vec(CustomerServiceUserDTO)],
-      ['query'],
-    ),
   'getAllInternalUsers' : IDL.Func([], [IDL.Vec(InternalUserDTO)], ['query']),
   'getAllPartnersByStatus' : IDL.Func(
       [UserStatus],
@@ -338,7 +327,6 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
-  'registerCustomerServiceUser' : IDL.Func([], [IDL.Text], []),
   'registerInternalUser' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [IDL.Text],
@@ -536,12 +524,6 @@ export const idlFactory = ({ IDL }) => {
     'principalId' : IDL.Text,
   });
   const AuditLogEntryList = IDL.Vec(AuditLogEntry);
-  const CustomerServiceUserDTO = IDL.Record({
-    'id' : IDL.Text,
-    'status' : UserStatus,
-    'name' : IDL.Text,
-    'principalId' : IDL.Text,
-  });
   const InternalUserDTO = IDL.Record({
     'id' : IDL.Text,
     'status' : UserStatus,
@@ -668,11 +650,6 @@ export const idlFactory = ({ IDL }) => {
         [AuditLogEntryList],
         ['query'],
       ),
-    'getAllCustomerServiceUsers' : IDL.Func(
-        [],
-        [IDL.Vec(CustomerServiceUserDTO)],
-        ['query'],
-      ),
     'getAllInternalUsers' : IDL.Func([], [IDL.Vec(InternalUserDTO)], ['query']),
     'getAllPartnersByStatus' : IDL.Func(
         [UserStatus],
@@ -708,7 +685,6 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
-    'registerCustomerServiceUser' : IDL.Func([], [IDL.Text], []),
     'registerInternalUser' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [IDL.Text],

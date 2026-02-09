@@ -1,72 +1,66 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement real internal access-code verification (A/B) to route to login/register, and add Superadmin settings to view/edit active codes and statuses.",
+  "summary": "Backend includes internal registration/login/approval flows; current work focuses on fixing an internal registration bug where user IDs are generated from caller principal causing overwrites, and ensuring CUSTOMER_SERVICE is treated consistently as an internal role.",
   "architectural_notes": [
-    "Replace InternalGatePage mockResponse routing with a backend/canister verifyInternalAccessCode call that returns the correct route (/internal/login for A, /internal/daftar for B).",
-    "Define storage/source-of-truth for access codes and their statuses, readable/updatable from Superadmin settings."
+    "Internal userId generation in registerInternalUser must be unique per created user (use an internal counter or equivalent), not derived from caller principal, to prevent overwriting userProfilesById.",
+    "Add minimal safety guard in registerInternalUser to avoid silent overwrite if a generated userId already exists.",
+    "CUSTOMER_SERVICE must be treated the same as other internal roles in register/login/approval flows; avoid special DTO/paths that lose or alter role/status."
   ],
   "known_issues": [
-    "InternalGatePage currently uses a hardcoded mockResponse that always routes any code to /internal/login; must be replaced with real verification logic."
+    "Bug: registerInternalUser uses userId = \"INT-\" + caller principal, causing all internal registrations by the same SUPERADMIN to overwrite each other; leads to incorrect role/status (e.g., everyone appears as CUSTOMER_SERVICE pending)."
   ],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-replace-the-mockresponse-behavior-in-frontend-internalgatepage-with-real-backend-verification-submit-the-entered-code-to-the-backend-and-navigate-to-the-backend-provided-route-only-when-verification-succeeds-otherwise-show-an-invalid-code-error",
-      "title": "Replace the mockResponse behavior in frontend InternalGatePage with real backend verification: submit the entered code to the backend and navigate to the backend-provided route only when verification succeeds; otherwise show an invalid-code error.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-superadmin-dashboard-pengaturan-tab-content-to-load-and-display-a-list-of-all-internal-access-codes-a-and-b-with-their-status-and-provide-controls-for-superadmin-to-update-the-code-values-and-statuses",
-      "title": "Implement the Superadmin Dashboard \"Pengaturan\" tab content to load and display a list of all internal access codes (A and B) with their status, and provide controls for Superadmin to update the code values and statuses.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-extend-frontend-react-query-hooks-to-call-the-new-backend-apis-for-verifying-internal-access-codes-and-for-superadmin-to-fetch-update-the-internal-access-codes-ensure-queries-are-invalidated-refetched-after-updates-so-the-settings-list-stays-current",
-      "title": "Add/extend frontend React Query hooks to call the new backend APIs for verifying internal access codes and for Superadmin to fetch/update the internal access codes; ensure queries are invalidated/refetched after updates so the settings list stays current.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Activate real backend logic for internal access-code verification so Code A routes to /internal/login (Asistenku masuk) and Code B routes to /internal/daftar (Asistenku daftar), replacing the current mockResponse behavior.",
+      "summary": "Fix internal registration bug: generate unique internal user IDs (counter-based, not caller principal), prevent overwrites in userProfilesById/byPrincipal, and ensure CUSTOMER_SERVICE is handled consistently as a normal internal role",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "AR-2",
-      "summary": "Add Superadmin > Pengaturan tab UI to load/view a list of all active internal access codes with their status, and allow Superadmin to update/change the codes (A/B).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Implement backend support for real internal access-code verification so that entering Code A routes to \"/internal/login\" (Asistenku masuk) and entering Code B routes to \"/internal/daftar\" (Asistenku daftar). The backend must reject any other code as invalid.",
+      "summary": "Update `backend/main.mo` `registerInternalUser(role, name, email, whatsapp)` to generate a unique internal user ID that does not depend on the caller Principal (replace any `\"INT-\" # caller.toText()` strategy). Use an internal counter-based strategy so a single SUPERADMIN can register multiple internal users without overwriting entries in `userProfilesById`.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-4",
-      "summary": "Add backend APIs for Superadmin to load/view the current internal access codes and their status, and to update/rotate/change Code A and Code B along with their status.",
+      "id": "AR-3",
+      "summary": "Ensure the internal ID counter used by `registerInternalUser` remains safe across canister upgrades so it does not reset to a value that could collide with existing `INT-*` IDs already stored in `userProfilesById`. If an upgrade/migration step is necessary under current state persistence, add the minimal conditional migration to preserve or recompute the counter from existing stored profiles.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add a minimal safety guard in `registerInternalUser` to prevent silent overwrite in `userProfilesById`: if the newly generated `userId` already exists in `userProfilesById`, the function must not overwrite the existing profile (e.g., retry generating the next counter value until free, or trap with a clear error).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Keep `registerInternalUser` authorization exactly as it currently is: it must remain callable only by a caller whose existing profile role is `SUPERADMIN`, and anonymous callers must be rejected.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Make `CUSTOMER_SERVICE` handling fully consistent with other internal roles in backend registration and returned/listed data: when `registerInternalUser` is called with role `CUSTOMER_SERVICE`, it must create the same `UserProfile` structure as other internal roles (role preserved as `CUSTOMER_SERVICE`, status `#pending`, stored in both `userProfilesById` and `userProfilesByPrincipal`). Remove/avoid any special-case DTO or list/return path that causes CUSTOMER_SERVICE users to lose role information or be treated differently from other internal roles.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Activate real internal access-code verification and Superadmin settings to view/update Code A & B",
+  "projectName": "Fix internal registration overwrite bug (unique INT IDs + CUSTOMER_SERVICE consistency)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
